@@ -1,2 +1,2 @@
 # virtualclerk
-Virtual Assistant prototype
+Virtual Assistant prototype using a WebGLStudio scene.
