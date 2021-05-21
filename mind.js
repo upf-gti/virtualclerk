@@ -1,47 +1,5 @@
 //Minds are components in charge of coming with an answer to a given question
 
-
-//Mind component for testing purposes
-function MindTest()
-{
-	this.onMessage = null;
-}
-
-MindTest.fake_answers = [
-	"I don't know. Sorry.",
-	"I should know that one.",
-	"Thats an interesting question.",
-	"Let me think about it and answer tomorrow"
-];
-
-MindTest.prototype.requestWelcomeMessage = function()
-{
-	var that = this;
-	setTimeout(function(){
-		if(that.onMessage)
-			that.onMessage({
-				type: "msg",
-				msgType: "greeting",
-				content: "Hello!"
-			});
-	},2000); //delay
-}
-
-MindTest.prototype.requestAnswer = function( question )
-{
-	var that = this;
-	var answer = MindTest.fake_answers[ Math.floor(MindTest.fake_answers.length * Math.random()) ];
-	setTimeout(function(){
-		if(that.onMessage)
-			that.onMessage({
-				type: "msg",
-				msgType: "answer",
-				content: answer
-			});
-	},2000); //delay
-}
-
-
 //used to send question to a remote server 
 function MindRemote()
 {
@@ -55,21 +13,26 @@ MindRemote.prototype.connect = function( url, on_connected, on_error )
 		this.socket.close();
 
 	var that = this;
-	this.socket = new WebSocket( url );
-	this.socket.onopen = on_ready;
+	this.socket = new WebSocket( "wss://" + url );
+	this.socket.onopen = function (){
+		console.log("SENDING CONNECTING MESSAGE");
+		this.send( JSON.stringify( { type:"connect", url : "ws://dtic-recepcionist-kbnli.s.upf.edu:8765" } ) )
+		if(on_connected)
+			on_connected();
+	};
 	this.socket.onmessage = this.processServerMessage.bind(this);		
-	this.socket.onerror = onerror;
+	this.socket.onerror = on_error;
 	this.socket.onclose = function()
 	{
-		log("connection closed");
-		that.socket = null;
+	
+		//setTimeout(that.connect(url),1000)
 	}
 }
 
 MindRemote.prototype.requestAnswer = function( question )
 {
 	var msg = { 
-		type: "question",
+		type: "request",
 		content: question
 	};
 	this.sendMessage(msg);

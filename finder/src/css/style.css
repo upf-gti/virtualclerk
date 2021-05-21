@@ -1,0 +1,215 @@
+.bgimg {
+  background-position: center;
+  background-size: cover;
+  background-image: url("../../assets/logo.jpg");
+  min-height: 25%;
+}
+
+@media (min-width: 1000px){
+    /* CSS that should be displayed if width is equal to or less than 991px and larger
+     than 768px goes here */
+     .bgimg {
+        background-position: center;
+        background-size: cover;
+        background-image: url("../../assets/logo_big.jpg");
+        min-height: 25%;
+      }
+}
+
+.column {
+    float: left;
+    width: AUTO;
+    margin: 20px 1.15%;
+    height: auto;
+    color:white;
+    background-color: #696969;    /* Medium blue */
+    padding-bottom: 10px;
+    padding-top: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-radius: 4px;
+    font-size:2vh;
+}
+.column:hover {
+    cursor: pointer;
+}
+.column.active {
+    float: left;
+    width: AUTO;
+    margin: 20px 1.15%;
+    height: auto;
+    color: white;
+    background-color: #A7192B;    /* Medium blue */
+    padding-bottom: 10px;
+    padding-top: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-radius: 4px;
+}
+.w3-input {
+    padding: 10px;
+    display: block;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    width: 100%;
+    font-size:3vw;
+}
+.w3-padding-16 {
+    padding-top: 18px!important;
+    padding-bottom: 18px!important;
+    font-size: 4vw;
+}
+.w3-greyscale-min, .w3-grayscale-min {
+    filter: grayscale(30%);
+}
+
+.w3-light-grey, .w3-hover-light-grey:hover, .w3-light-gray, .w3-hover-light-gray:hover {
+    color: #000!important;
+    background-color: #f1f1f1!important;
+    bottom: 0px;
+    position: absolute;
+    width: 100%;
+}
+
+.w3-button {
+    color: #FFF!important;
+    background-color: rgb(93, 93, 93)!important;
+    width: 100%;
+}
+.w3-red{
+	color: #FFF!important;
+	background-color: rgb(167 25 43)!important;
+}
+.w3-gray{
+	color: #FFF!important;
+	background-color: #ccc!important;
+}
+
+.w3-big-button{
+  width: 300px;
+  height: 27%;
+  margin-left: calc(50% - 150px);
+  position: relative;
+  z-index: 1000;
+}
+.w3-big-button:hover{
+}
+.w3-badge, .w3-tag {
+    background-color: #fff;
+    color: #000;
+    display: inline-block;
+    padding-left: 8px;
+    padding-right: 8px;
+    text-align: center;
+    font-size: 4vh;
+    font-weight: 100;
+    margin: 30px;
+}
+
+.w3-light-grey, .w3-hover-light-grey:hover, .w3-light-gray, .w3-hover-light-gray:hover {
+    color: #000!important;
+    background-color: #f1f1f1!important;
+    bottom: 0px;
+    position: absolute;
+    width: 100%;
+    /* height: auto; */
+    padding: 0px !important;
+}
+.w3-padding-48 {
+    padding-top: 2px!important;
+    padding-bottom: 2px!important;
+}
+
+.autocomplete-items {
+    position: absolute;
+    border: 1px solid #d4d4d4;
+    border-bottom: none;
+    border-top: none;
+    z-index: 99;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 30vh;
+    overflow-y: scroll;
+}
+
+.autocomplete-items div {
+  padding: 10px;
+  cursor: pointer;
+  background-color: #fff;
+  border-bottom: 1px solid #d4d4d4;
+}
+
+/*when hovering an item:*/
+.autocomplete-items div:hover {
+  background-color: #e9e9e9;
+}
+
+/*when navigating through the items using the arrow keys:*/
+.autocomplete-active {
+  background-color: DodgerBlue !important;
+  color: #ffffff;
+}
+
+.autocomplete {
+  position: relative;
+  display: inline-block;
+}
+
+input {
+  border: 1px solid transparent;
+  background-color: #f1f1f1;
+  padding: 10px;
+  font-size: 16px;
+}
+
+input[type=text] {
+  background-color: #f1f1f1;
+  width: 100%;
+  font-size: 4vh;
+
+}
+
+input[type=submit] {
+  background-color: DodgerBlue;
+  color: #fff;
+  cursor: pointer;
+}
+
+input:focus {
+  outline: none !important;
+  /* border-color: #719ECE; */
+  box-shadow: 0 0 7px #719ECE;
+}
+
+#waiting-container
+{
+  /* border:solid red 2px; */
+  width:95%;
+  position:absolute;
+  background-color:white;
+  z-index:1000;
+  margin: 0 auto;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 400px;
+  font-size: 4vh;
+  font-family: "Segoe UI",Arial,sans-serif;
+  visibility: "visible";
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #e9e9e9;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: rgb(164, 164, 164);
+  border-radius: 4px;
+
+}
