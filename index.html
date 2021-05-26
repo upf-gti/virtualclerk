@@ -28,16 +28,25 @@
 		</div>
 		<div id="character"><iframe src="" ></iframe></div>
 	</div>
-		<!-- The Modal -->
+	<!-- The Modal -->
 	<div id="reconnecting" class="modal">
-
 	  <!-- Modal content -->
 	  <div class="modal-content">
-		<span class="close">&times;</span>
+		<span id = "reconnecting-close" class="close">&times;</span>
 		<p id = "modal-msg"></p>
 	  </div>
-
 	</div>
+	<!-- The Server Session Modal -->
+	<div id="session" class="modal">
+		<!-- Modal content -->
+		<div class="modal-content">
+		  <span id ="session-close" class="close">&times;</span>
+		  <p>Server session to connect with the tablet:</p>
+		  <input id= "token" placeholder="Token...">
+		  <button id="btn-session">Connect</button>
+		</div>
+	</div>
+
 	<script type="text/javascript" src="code.js"></script>
 	<script type="text/javascript" src="mind.js"></script>
 	<!--<script type="text/javascript" src="./dialogflow/mindDialogFlow.js"></script>-->

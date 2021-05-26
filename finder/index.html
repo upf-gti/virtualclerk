@@ -57,6 +57,7 @@ body, html {
   </div>
 </header>
 <div class="w3-container" id="where" style="padding-bottom:32px;">
+    
     <div id='waiting-container'>Please, interact with Eva</div>
 
     <div class="w3-content" style="max-width:700px">
@@ -86,7 +87,16 @@ body, html {
   </div>
   <button id="play-btn" class="w3-button w3-circle w3-red w3-big-button"><i class="fa fa-play" style="font-size:130px;color:#f1f1f1"></i></button>
 </div>
-
+<!-- The Server Session Modal -->
+<div id="session" class="w3-center modal">
+  <!-- Modal content -->
+  <div class="modal-content">
+    <span id ="session-close" class="close">&times;</span>
+    <p>Server session to connect with the tablet:</p>
+    <input id= "token" placeholder="Token...">
+    <button id="btn-session">Connect</button>
+  </div>
+</div>
 <!-- Footer -->
 <footer class="w3-center w3-light-grey w3-padding-48 w3-large">
   <p>Beta version</p>

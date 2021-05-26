@@ -223,6 +223,31 @@ function setEvents()
         }
 
     });
+
+    //Server session Modal
+    var s_modal = document.getElementById("session");
+    var s_span = document.getElementById("session-close");
+    document.getElementById("btn-session").addEventListener("click", function(){
+        
+        var s_input = document.getElementById("token");
+        if(ws && ws.readyState== WebSocket.OPEN)
+        {
+            var message = {type: "session", data: {action: "tablet_connection", token: s_input.value}};
+            ws.send(JSON.stringify(message))
+            s_modal.style.display = "none";
+            //Wait for server response (client connected to this session)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        }
+        else{
+            s_modal.innerText = "Try again in a few minutes."
+        }
+    })
+    // When the user clicks on <span> (x), close the modal
+    s_span.onclick = function() {
+        var s_input = document.getElementById("token");
+        if(s_input.value!="")
+            s_modal.style.display = "none";
+    }
+
 }
 function changeWaitingView()
 {

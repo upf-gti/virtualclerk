@@ -181,15 +181,42 @@ var CORE = {
 		this.tabRemote = new MindRemote();
 		this.tabRemote.connect("webglstudio.org/port/9004/ws/", this.onConnectionStarted.bind(this), this.onConnectionError.bind(this));
 		this.tabRemote.onMessage = this.processTabletMessage.bind(this);
+		var that = this;
 
+		//Reconnecting Modal
 		var modal = document.getElementById("reconnecting");
-		var span = document.getElementsByClassName("close")[0];
-
+		var span = document.getElementById("reconnecting-close");
 		// When the user clicks on <span> (x), close the modal
 		span.onclick = function() {
-		  modal.style.display = "none";
+		 
+			modal.style.display = "none";
 		}
-		var that = this;
+
+		//Server session Modal
+		var s_modal = document.getElementById("session");
+		var s_span = document.getElementById("session-close");
+		var btn_session = document.getElementById("btn-session");
+		btn_session.addEventListener("click", function(){
+			
+			var s_input = document.getElementById("token");
+			if(that.tabRemote.socket && that.tabRemote.socket.readyState== WebSocket.OPEN)
+			{
+				that.tabRemote.sendMessage({type: "session", data: {action: "vc_connection", token: s_input.value}})
+				s_modal.style.display = "none";
+				//Wait for server response (client connected to this session)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			}
+			else{
+				s_modal.innerText = "Try again in a few minutes."
+			}
+		})
+		// When the user clicks on <span> (x), close the modal
+		s_span.onclick = function() {
+			var s_input = document.getElementById("token");
+			if(s_input.value!="")
+				s_modal.style.display = "none";
+		}
+
+		
 		var iframeDoc = document.querySelector("iframe").contentWindow.document;
 		iframeDoc.addEventListener("keydown", function(event){
 			event.preventDefault();
