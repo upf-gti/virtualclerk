@@ -93,7 +93,7 @@ var CORE = {
 //		----------------------------------------------------
 		//character
 		var iframe = this.iframe = document.querySelector("#character iframe");
-		iframe.src = "https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2Fscenes%2FtestAnimations.scene.json"//"https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2Fscenes%2FLaraFacialAnimations.scene.json";
+		iframe.src = "https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2FDTICReceptionist%2FRecepcionistaDTIC.scene.json"//"https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2Fscenes%2FLaraFacialAnimations.scene.json";
 
 		if(!CORE.iframe.contentWindow)
 			return;
@@ -410,7 +410,7 @@ var CORE = {
 		state = LS.Globals.SPEAKING;
 		if(msg.content.includes("name and surname"))
 		{
-			msg.content = "Could you type the name and surname on the tablet, please?";
+			//msg.content = "Could you type the name and surname on the tablet, please?";
 			/*if(finder)
 				finder.changeWaitingView()*/
 			this.tabRemote.sendMessage({type:"request_data"});
@@ -428,16 +428,18 @@ var CORE = {
 			}
 			else{
 
-			if(Math.random()<0.5)
-				obj["gesture"] = {lexeme:"speaking"};
+				if(Math.random()<0.5)
+					obj["gesture"] = {lexeme:"speaking"};
 			}
 			;
 		}
 
-		if(msg.content == "See you next time!")
+		if(msg.content == "See you next time, bye.")
 		{
 			this.isFirstMsg = true;
 			this.start = false;
+			recognition.stop();
+			start_recognition = false;
 			/*if(finder.start)
 				finder.resetView()*/
 			this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
