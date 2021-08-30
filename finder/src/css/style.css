@@ -80,17 +80,24 @@
 	color: #FFF!important;
 	background-color: rgb(167 25 43)!important;
 }
+.w3-red-color{
+  color: rgb(167 25 43)!important;
+}
 .w3-gray{
 	color: #FFF!important;
 	background-color: #ccc!important;
 }
+.w3-gray-color{
+  color: #ccc!important;
+}
 
 .w3-big-button{
-  width: 300px;
-  height: 27%;
-  margin-left: calc(50% - 150px);
+  width: auto;
+  height: auto;
+  margin-left: calc(50% - 171.43px);/*calc(50% - 200px);*/
   position: relative;
   z-index: 1000;
+  top:-60px;
 }
 .w3-big-button:hover{
 }
@@ -181,7 +188,9 @@ input:focus {
   /* border-color: #719ECE; */
   box-shadow: 0 0 7px #719ECE;
 }
-
+.absolut{
+  position: absolute;
+}
 #waiting-container
 {
   /* border:solid red 2px; */

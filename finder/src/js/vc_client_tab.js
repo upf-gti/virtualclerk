@@ -44,6 +44,9 @@ function init_websocket () {
             waiting_cnt.style.visibility = "hidden";
             var btn = document.getElementById("play-btn");
             btn.style.visibility = "hidden";
+            var speech_btn = document.getElementById("speech-btn");
+            speech_btn.style.visibility = "hidden";
+
           break;
 
         case "request_map":
@@ -58,14 +61,31 @@ function init_websocket () {
           if(json.action == "end_conversation")
           {
             var btn = document.getElementById("play-btn");
-            if(btn.classList.contains("w3-gray"))
+            if(btn.classList.contains("w3-gray-color"))
             {
-                btn.classList.remove("w3-gray");
-                btn.classList.add("w3-red");
+                btn.classList.remove("w3-gray-color");
+                btn.classList.add("w3-red-color");
             }
             btn.style.visibility = "visible";
             var waiting_cnt = document.getElementById("waiting-container")
             waiting_cnt.style.visibility = "visible";
+          }
+          if(json.action == "speech_start")
+          {
+            var btn = document.getElementById("play-btn");
+            btn.style.visibility = "hidden";
+            
+            var speech_btn = document.getElementById("speech-btn");
+            speech_btn.classList.add("w3-red-color");
+            speech_btn.style.visibility = "visible";
+          }
+          if(json.action == "speech_end")
+          {
+            var speech_btn = document.getElementById("speech-btn");
+            speech_btn.style.visibility = "hidden";
+
+            var btn = document.getElementById("play-btn");
+            btn.style.visibility = "visible";
           }
           break;
       }

@@ -12,7 +12,7 @@ const modes = { DEBUG:0, RELEASE:1 };
 var state = 2; //WAITING
 var counter = 0;
 
-var url = "webglstudio.org/port/9000/ws/"//"dtic-recepcionist-kbnli.s.upf.edu:8765";
+var url = "webglstudio.org/port/9001/ws/"//"dtic-recepcionist-kbnli.s.upf.edu:8765";
 var CORE = {
 	log_container: null,
 	socket: null,
@@ -93,7 +93,7 @@ var CORE = {
 //		----------------------------------------------------
 		//character
 		var iframe = this.iframe = document.querySelector("#character iframe");
-		iframe.src = "https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2FDTICReceptionist%2FRecepcionistaDTIC.scene.json"//"https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2Fscenes%2FLaraFacialAnimations.scene.json";
+		iframe.src = "https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2FDTICReceptionist%2FRecepcionistaDTIC.scene.json&autoplay=true"//"https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2Fscenes%2FLaraFacialAnimations.scene.json";
 
 		if(!CORE.iframe.contentWindow)
 			return;
@@ -107,17 +107,29 @@ var CORE = {
 			//var LS = CORE.iframe.contentWindow.LS;
 			//LS.Globals.processMsg(JSON.stringify({control:3}), true); //listening
 		}
+		recognition.onaudiostart = function()
+		{
+			var that = this;
+			if(that.tabRemote)
+				that.tabRemote.sendMessage({type: "app_action", action: "speech_start" })
+		}.bind(this)
+		recognition.onaudioend = function()
+		{
+			var that = this;
+			if(that.tabRemote)
+				that.tabRemote.sendMessage({type: "app_action", action: "speech_end" })
+		}.bind(this)
 		recognition.onspeechstart = function(){
 			var LS = CORE.iframe.contentWindow.LS;
-
 			if(LS)
 			{
 				state = LS.Globals.LISTENING;
 				LS.Globals.processMsg(JSON.stringify({control:LS.Globals.LISTENING}), true);
 			}
+			
 			console.log("LISTENING(speech start)")
 
-		}
+		}.bind(this)
 		recognition.onspeechend = function(){
 			var LS = CORE.iframe.contentWindow.LS;
 
@@ -126,8 +138,10 @@ var CORE = {
 				state = LS.Globals.PROCESSING;
 				LS.Globals.processMsg(JSON.stringify({control:LS.Globals.PROCESSING}), true);
 			}
+			
 			console.log("PROCESSING (speech end)")
-		}
+			
+		}.bind(this)
 		recognition.onend = function(event){
 			console.log("Recognition stopped");
 			start_recognition = false;
@@ -170,6 +184,7 @@ var CORE = {
 
 			}
 			final_transcript = "";
+			recognition.stop();
 		}
 
 

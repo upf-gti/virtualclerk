@@ -14,6 +14,25 @@ var groups_list = [];
 var buildings_list = [];
 var current_data_source = person_names_list;
 
+var URL_PEOPLE = "https://drive.google.com/file/d/1R7Psnyfxj9qYtE9Qli6JXR3ehj25NTtj/view?usp=sharing"//"https://webglstudio.org/users/dmoreno/projects/finder/fields.xlsx";
+var URL_GROUPS =  "https://drive.google.com/file/d/1ar4j46cg-Ftxix4XZhO-IBepnXkJnMwI/view?usp=sharing"
+var URL_BUILDINGS =  "https://drive.google.com/file/d/1h3itEf8YwZP2pdDa0gZK-9D1N5E0zcyg/view?usp=sharing"
+
+/* For Google API*/
+var CLIENT_ID = '566335008510-hd8865t1fvvn92gnooo39mg78d88mfhi.apps.googleusercontent.com';
+var TOKEN = "ya29.a0AfH6SMCVMXHBqJgqkwoM927NJZijFHjHsiCFnon_XIZ4Bqu07QFLjWo3u21_NJApNytjXp1V1in7IZRbc1_PHqLQXneuXBa3NsNPnKsoVjBEQjqIVW8tHnf5l6G8vwpqLDKVMQnd6bFSOJie2qR-2RbwnvrV";
+var SCOPES = ["https://www.googleapis.com/auth/drive.appdata",
+"https://www.googleapis.com/auth/drive.file",
+"https://www.googleapis.com/auth/drive.install",
+"https://www.googleapis.com/auth/drive.apps.readonly",
+"https://www.googleapis.com/auth/drive.metadata",
+"https://www.googleapis.com/auth/drive",
+"https://www.googleapis.com/auth/drive.activity",
+"https://www.googleapis.com/auth/drive.activity.readonly",
+"https://www.googleapis.com/auth/drive.readonly",
+"https://www.googleapis.com/auth/drive.metadata.readonly",
+"https://www.googleapis.com/auth/drive.scripts"];
+
 var ws = null;
 
 function initApp ()
@@ -21,16 +40,61 @@ function initApp ()
     window.current_searchtype = PERSON_TYPE;
     window.current_input = '';
     window.start = false;
-    loadData();
+    startGoogleAPI()
+    //loadData();
     setEvents();
     ws = init_websocket();
 }
-
-function loadData ()
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  }
+async function loadData ()
 {
-    /* set up XMLHttpRequest */
-    var url = "https://webglstudio.org/users/dmoreno/projects/finder/fields.xlsx";
-    var oReq = new XMLHttpRequest();
+    /*PEOPLE DATA*/
+    var fileId_people = URL_PEOPLE.split("/")[5]
+    getDriveFile(fileId_people,"text/csv", function(result)
+    {
+        var data = CSVToArray(result, ";");
+        data = data[0].slice(1);
+        for(var i=0; i<data.length; i++)
+        {
+            var data_arr = data[i].split(", ");
+            for(var j=0; j<data_arr.length; j++)
+                 data_arr[j] = capitalizeFirstLetter(data_arr[j].toLowerCase());
+            var person = data_arr.join(" ");
+            person_names_list.push(person);
+        }
+        updateListDB();
+    })
+
+    /*GROUPS DATA*/
+    var fileId_groups = URL_GROUPS.split("/")[5]
+    getDriveFile(fileId_groups,"text/csv", function(result)
+    {
+        var data = CSVToArray(result, ";");
+        data = data[0].slice(1);
+        for(var i=0; i<data.length; i++)
+        {
+            var group = data[0];
+            groups_list.push(group);   
+        }
+        updateListDB();
+    })
+    /*BUILDINGS DATA*/
+    var fileId_buildings = URL_BUILDINGS.split("/")[5]
+    getDriveFile(fileId_buildings,"text/csv", function(result)
+    {
+        var data = CSVToArray(result, ";");
+        data = data[0].slice(1);
+        for(var i=0; i<data.length; i++)
+        {
+            var building = data[0];
+            buildings_list.push(building);          
+        }
+        updateListDB();
+    })
+       /* set up XMLHttpRequest */
+  /*  var oReq = new XMLHttpRequest();
     oReq.open("GET", url, true);
     oReq.responseType = "arraybuffer";
 
@@ -38,39 +102,109 @@ function loadData ()
         var arraybuffer = oReq.response;
 
         /* convert data to binary string */
-        var data = new Uint8Array(arraybuffer);
+    /*    var data = new Uint8Array(arraybuffer);
         var arr = new Array();
         for (var i = 0; i != data.length; ++i) arr[i] = String.fromCharCode(data[i]);
         var bstr = arr.join("");
 
         /* Call XLSX */
-        var workbook = XLSX.read(bstr, {
+/*        var workbook = XLSX.read(bstr, {
             type: "binary"
         });
         console.log(workbook.SheetNames)
         /* DO SOMETHING WITH workbook HERE */
-        var people_sheet = workbook.SheetNames[0];
+ /*       var people_sheet = workbook.SheetNames[0];
         /* Get worksheet */
-        var people_worksheet = workbook.Sheets[people_sheet];
+    /*    var people_worksheet = workbook.Sheets[people_sheet];
         persons_json = XLSX.utils.sheet_to_json(people_worksheet, {raw: true});
         // console.log(XLSX.utils.sheet_to_json(people_worksheet, {
         //     raw: true
         // }));
         var group_sheet = workbook.SheetNames[3];
         /* Get worksheet */
-        var group_worksheet = workbook.Sheets[group_sheet];
+    /*    var group_worksheet = workbook.Sheets[group_sheet];
         groups_json = XLSX.utils.sheet_to_json(group_worksheet, {raw: true});
 
         var building_sheet = workbook.SheetNames[5];
         /* Get worksheet */
-        var building_worksheet = workbook.Sheets[building_sheet];
+    /*    var building_worksheet = workbook.Sheets[building_sheet];
         buildings_json = XLSX.utils.sheet_to_json(building_worksheet, {raw: true});
 
         generate_lists([persons_json,groups_json,buildings_json], updateListDB);
     }
 
-    oReq.send();
+    oReq.send();*/
 }
+function getDriveFile(fileId, mimeType, callback) {
+    var user = gapi.auth2.getAuthInstance().currentUser.get();
+    var oauthToken = null;
+    if(user.getAuthResponse() && user.getAuthResponse().access_token)
+      oauthToken = user.getAuthResponse().access_token;
+    else if(user.qc)
+        oauthToken = user.qc.access_token;
+    else if(user.mc)
+        oauthToken = user.mc.access_token;
+    else{
+        for(var i in user)
+        {
+        if(i=="access_token")
+            oauthToken = user[i];
+        if(user[i].access_token!=undefined)
+            oauthToken = user[i].access_token;
+        }
+        if(!oauthToken&&!gapi.auth2.getAuthInstance().isSignedIn.get())
+            gapi.auth2.getAuthInstance().signIn()
+        else if(!oauthToken)
+        {
+        console.error("Access token not found")
+        return;
+        }
+    }
+        
+    
+      
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function()
+    {
+        if (xhr.readyState == 4 && xhr.status == 200)
+        {
+            if(callback)
+              callback(xhr.response)
+          if(xhr.responseText)
+            console.log(xhr.responseText); // Another callback here
+        }
+        else
+            console.log(xhr)
+    }; 
+    var url = 'https://www.googleapis.com/drive/v3/files/'+fileId;
+    url+='?alt=media'; 
+  
+    url+= '&key=AIzaSyDJp9qKyFzu77gVhsNEQjUfxxpLhUgfBho';
+    if(mimeType=="audio")
+    {
+      url+="&v=.mp3"
+      xhr.responseType = "arraybuffer";
+    }
+    xhr.open('GET', url);
+    xhr.setRequestHeader('Authorization',
+    'Bearer ' + oauthToken);
+    
+    xhr.send(); 
+    
+  }
+function startGoogleAPI() {
+    if(!gapi.auth2)
+    {
+        gapi.load("auth2", startGoogleAPI);
+        return;
+    }
+
+    gapi.auth2.init({  client_id: CLIENT_ID, scope: SCOPES.join(' ')})
+    .then(loadData
+        ,function(){
+        console.log("Error authenicate google client")
+      })
+  }
 function generate_lists(jsons_array, onComplete)
 {
     p_json = jsons_array[0];
@@ -198,8 +332,8 @@ function setEvents()
     });
     document.getElementById("play-btn").addEventListener("click", function() {
         window.start = true;
-        document.getElementById("play-btn").classList.remove("w3-red")
-        document.getElementById("play-btn").classList.add("w3-gray")
+        document.getElementById("play-btn").classList.remove("w3-red-color")
+        document.getElementById("play-btn").classList.add("w3-gray-color")
         // send start conversation "event" to the server
         var init_message = {type:"tab_action", action:"initialize", time:timestamp}
         ws.send(JSON.stringify(init_message));
@@ -262,8 +396,8 @@ function changeWaitingView()
 function resetView()
 {
   window.start = false;
-  document.getElementById("play-btn").classList.remove("w3-gray")
-  document.getElementById("play-btn").classList.add("w3-red")
+  document.getElementById("play-btn").classList.remove("w3-gray-color")
+  document.getElementById("play-btn").classList.add("w3-red-color")
 }
 function updateListDB()
 {
@@ -376,3 +510,86 @@ function autocomplete(inp, arr) {
         closeAllLists(e.target);
     });
 }
+function CSVToArray( strData, strDelimiter ){
+    // Check to see if the delimiter is defined. If not,
+    // then default to comma.
+    strDelimiter = (strDelimiter || ",");
+  
+    // Create a regular expression to parse the CSV values.
+    var objPattern = new RegExp(
+      (
+        // Delimiters.
+        "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+  
+        // Quoted fields.
+        "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+  
+        // Standard fields.
+        "([^\"\\" + strDelimiter + "\\r\\n]*))"
+      ),
+      "gi"
+    );
+  
+  
+    // Create an array to hold our data. Give the array
+    // a default empty first row.
+    var arrData = [[]];
+  
+    // Create an array to hold our individual pattern
+    // matching groups.
+    var arrMatches = null;
+  
+  
+    // Keep looping over the regular expression matches
+    // until we can no longer find a match.
+    while (arrMatches = objPattern.exec( strData )){
+  
+      // Get the delimiter that was found.
+      var strMatchedDelimiter = arrMatches[ 1 ];
+  
+      // Check to see if the given delimiter has a length
+      // (is not the start of string) and if it matches
+      // field delimiter. If id does not, then we know
+      // that this delimiter is a row delimiter.
+      if (
+        strMatchedDelimiter.length &&
+        strMatchedDelimiter !== strDelimiter
+      ){
+  
+        // Since we have reached a new row of data,
+        // add an empty row to our data array.
+        arrData.push( [] );
+  
+      }
+  
+      var strMatchedValue;
+  
+      // Now that we have our delimiter out of the way,
+      // let's check to see which kind of value we
+      // captured (quoted or unquoted).
+      if (arrMatches[ 2 ]){
+  
+        // We found a quoted value. When we capture
+        // this value, unescape any double quotes.
+        strMatchedValue = arrMatches[ 2 ].replace(
+          new RegExp( "\"\"", "g" ),
+          "\""
+        );
+  
+      } else {
+  
+        // We found a non-quoted value.
+        strMatchedValue = arrMatches[ 3 ];
+  
+      }
+  
+  
+      // Now that we have our value string, let's add
+      // it to the data array.
+      arrData[ arrData.length - 1 ].push( strMatchedValue );
+    }
+  
+    // Return the parsed data.
+    return arrData[0].map(function (_, c) { return arrData.map(function (r) { return r[c]; }); });
+//    return( arrData );
+  }

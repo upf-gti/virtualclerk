@@ -216,7 +216,7 @@ wss.on('connection', function connection(ws) {
                 case "app_action": 
                     msg = {
                         type:"app_action",
-                        action: "end_conversation",
+                        action: object_message.action || "end_conversation",
                         time:object_message.time || "no-time"
                     }
                     
