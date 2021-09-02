@@ -428,7 +428,7 @@ var CORE = {
 			//msg.content = "Could you type the name and surname on the tablet, please?";
 			/*if(finder)
 				finder.changeWaitingView()*/
-			this.tabRemote.sendMessage({type:"request_data"});
+			this.tabRemote.sendMessage({type:"request_data", data: "person"});
 		}
 		var obj = { speech: { text: msg.content }, control: LS.Globals.SPEAKING }; //speaking
 		//show on console

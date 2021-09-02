@@ -181,14 +181,23 @@ wss.on('connection', function connection(ws) {
                         msg={type:"info", data:"none",
                         time:object_message.type}
                     break;
-                // 
+                
                 case "request_data": 
+                /*Resquest data to the tablet (person, group, place)
+                  @type: type of message
+                  @data: type of data requested ("person", "group", "place")
+                */
                     msg = { type:"request_data",
+                            data: object_message.data,
                             time:object_message.time || "no-time"}; 
                                             
                     break;
 
                 case "response_data":
+                /*Send data requested from tablet to app (person, group, place)
+                  @type: type of message
+                  @data: data requested (person name & surname, group name, place name)
+                */
                     if(object_message.data )
                         msg = {
                             type: "response_data",
@@ -202,6 +211,10 @@ wss.on('connection', function connection(ws) {
                     break;
                 
                 case "tab_action":
+                /*User carried out some action thorught the tablet
+                  @type: type of message
+                  @action: type of action ("init_conversation")
+                */
                     if(object_message.action && object_message.action=="initialize" )
                     {
                         msg = {
