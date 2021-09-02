@@ -3,7 +3,7 @@ const fs = require('fs');
 const http = require('http');
 
 var bridge_url = "ws://dtic-recepcionist-kbnli.s.upf.edu:8765";
-var port = 9000;
+var port = 9001;
 
 console.log("waiting connections... port",port);
 
