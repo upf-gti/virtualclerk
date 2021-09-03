@@ -244,34 +244,38 @@ wss.on('connection', function connection(ws) {
                 /*Resquest data from DDBB (Google Drive)
                   @type: type of message
                   @data_type: type of data requested ("people", "groups", "places", "offices", "phrases")
-                */  var that = this;
+                */  var path = "";
                     switch(object_message.data_type){
                       case "people":
                         //fs.createReadStream(PATH_TO_PEOPLE).on("data",function(data){ console.log(data);sendData.bind(that,object_message.data_type)})
                         //fs.readFile(PATH_TO_PEOPLE, sendData.bind(ws,object_message.data_type))
-                        fs.readFile(PATH_TO_PEOPLE, 'utf8', function (err, data) {
-                          var data = data.replace(/\r?\n/g,"");
-                          sendData(ws,object_message.data_type, err, data)})
-                          return;
+                        path = PATH_TO_PEOPLE;
                         break;
                       case "places":
-                        fs.readFile(PATH_TO_PLACES)
+                        path = PATH_TO_PLACES;
                         break;
                       case "groups":
-                        fs.readFile(PATH_TO_GROUPS)
+                        path = PATH_TO_GROUPS;
                         break;
                       case "offices":
-                        fs.readFile(PATH_TO_OFFICES)
+                        path = PATH_TO_OFFICES;
                         break;
                       case "phrases":
-                        fs.readFile(PATH_TO_PHRASES)
+                        path = PATH_TO_PHRASES;
                         break;
                     }
-                    
-                    msg = { type:"request_data",
-                            data: object_message.data,
-                            time:object_message.time || "no-time"}; 
-                                            
+                    fs.readFile(path, 'utf8', function (err, data) {
+                      if (err) return console.log('Error reading file:', err);
+                      
+                      var msg = {
+                        type: "return_data",
+                        data_type: object_message.data_type,
+                        data: data,
+                        time:object_message.time || "no-time"
+                      }
+                      sendData(ws, msg)
+                    })
+                      return;              
                     break;
                 default:
                     msg = {
@@ -331,18 +335,9 @@ function sendInfo(ws, msg){
     ws.send(JSON.stringify({type: "info", data: msg}));
   }
 
-function sendData(ws, type, err, content)
+function sendData(ws, msg)
 {
-  if (err) return console.log('Error reading '+type+' file:', err);
-  console.log(ws)
-  console.log(type)
-  console.log(err)
-  var msg = {
-    type: "return_data",
-    data_type: type,
-    data: content
-  }
-  if(ws.session){
+   if(ws.session){
     if(ws.session.vc_client == ws){
         //BP to tablet
         ws.session.sendToVC(JSON.stringify(msg));

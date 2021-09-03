@@ -40,171 +40,74 @@ function initApp ()
     window.current_searchtype = PERSON_TYPE;
     window.current_input = '';
     window.start = false;
-    startGoogleAPI()
+    ws = init_websocket();
+    //startGoogleAPI()
     //loadData();
     setEvents();
-    ws = init_websocket();
+    
 }
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
   }
-async function loadData ()
-{
+function requestData(){
     /*PEOPLE DATA*/
-    var fileId_people = URL_PEOPLE.split("/")[5]
-    getDriveFile(fileId_people,"text/csv", function(result)
-    {
-        var data = CSVToArray(result, ";");
-        data = data[0].slice(1);
-        for(var i=0; i<data.length; i++)
-        {
-            var data_arr = data[i].split(", ");
-            for(var j=0; j<data_arr.length; j++)
-                 data_arr[j] = capitalizeFirstLetter(data_arr[j].toLowerCase());
-            var person = data_arr.join(" ");
-            person_names_list.push(person);
-        }
-        updateListDB();
-    })
-
+    var msg = {
+        type: "get_data",
+        data_type: "people"
+    }
+    ws.send(JSON.stringify(msg));
     /*GROUPS DATA*/
-    var fileId_groups = URL_GROUPS.split("/")[5]
-    getDriveFile(fileId_groups,"text/csv", function(result)
-    {
-        var data = CSVToArray(result, ";");
-        data = data[0].slice(1);
-        for(var i=0; i<data.length; i++)
-        {
-            var group = data[0];
-            groups_list.push(group);   
-        }
-        updateListDB();
-    })
-    /*BUILDINGS DATA*/
-    var fileId_buildings = URL_BUILDINGS.split("/")[5]
-    getDriveFile(fileId_buildings,"text/csv", function(result)
-    {
-        var data = CSVToArray(result, ";");
-        data = data[0].slice(1);
-        for(var i=0; i<data.length; i++)
-        {
-            var building = data[0];
-            buildings_list.push(building);          
-        }
-        updateListDB();
-    })
-       /* set up XMLHttpRequest */
-  /*  var oReq = new XMLHttpRequest();
-    oReq.open("GET", url, true);
-    oReq.responseType = "arraybuffer";
-
-    oReq.onload = function(e) {
-        var arraybuffer = oReq.response;
-
-        /* convert data to binary string */
-    /*    var data = new Uint8Array(arraybuffer);
-        var arr = new Array();
-        for (var i = 0; i != data.length; ++i) arr[i] = String.fromCharCode(data[i]);
-        var bstr = arr.join("");
-
-        /* Call XLSX */
-/*        var workbook = XLSX.read(bstr, {
-            type: "binary"
-        });
-        console.log(workbook.SheetNames)
-        /* DO SOMETHING WITH workbook HERE */
- /*       var people_sheet = workbook.SheetNames[0];
-        /* Get worksheet */
-    /*    var people_worksheet = workbook.Sheets[people_sheet];
-        persons_json = XLSX.utils.sheet_to_json(people_worksheet, {raw: true});
-        // console.log(XLSX.utils.sheet_to_json(people_worksheet, {
-        //     raw: true
-        // }));
-        var group_sheet = workbook.SheetNames[3];
-        /* Get worksheet */
-    /*    var group_worksheet = workbook.Sheets[group_sheet];
-        groups_json = XLSX.utils.sheet_to_json(group_worksheet, {raw: true});
-
-        var building_sheet = workbook.SheetNames[5];
-        /* Get worksheet */
-    /*    var building_worksheet = workbook.Sheets[building_sheet];
-        buildings_json = XLSX.utils.sheet_to_json(building_worksheet, {raw: true});
-
-        generate_lists([persons_json,groups_json,buildings_json], updateListDB);
+    var msg = {
+        type: "get_data",
+        data_type: "groups"
     }
-
-    oReq.send();*/
+    ws.send(JSON.stringify(msg));
+    /*PLACES DATA*/
+    var msg = {
+        type: "get_data",
+        data_type: "places"
+    }
+    ws.send(JSON.stringify(msg));
 }
-function getDriveFile(fileId, mimeType, callback) {
-    var user = gapi.auth2.getAuthInstance().currentUser.get();
-    var oauthToken = null;
-    if(user.getAuthResponse() && user.getAuthResponse().access_token)
-      oauthToken = user.getAuthResponse().access_token;
-    else if(user.qc)
-        oauthToken = user.qc.access_token;
-    else if(user.mc)
-        oauthToken = user.mc.access_token;
-    else{
-        for(var i in user)
-        {
-        if(i=="access_token")
-            oauthToken = user[i];
-        if(user[i].access_token!=undefined)
-            oauthToken = user[i].access_token;
-        }
-        if(!oauthToken&&!gapi.auth2.getAuthInstance().isSignedIn.get())
-            gapi.auth2.getAuthInstance().signIn()
-        else if(!oauthToken)
-        {
-        console.error("Access token not found")
-        return;
-        }
-    }
+function loadData (data_type, data)
+{
+    var data = CSVToArray(data, ";");
+    data = data[0].slice(1);
         
-    
-      
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function()
-    {
-        if (xhr.readyState == 4 && xhr.status == 200)
-        {
-            if(callback)
-              callback(xhr.response)
-          if(xhr.responseText)
-            console.log(xhr.responseText); // Another callback here
-        }
-        else
-            console.log(xhr)
-    }; 
-    var url = 'https://www.googleapis.com/drive/v3/files/'+fileId;
-    url+='?alt=media'; 
-  
-    url+= '&key=AIzaSyDJp9qKyFzu77gVhsNEQjUfxxpLhUgfBho';
-    if(mimeType=="audio")
-    {
-      url+="&v=.mp3"
-      xhr.responseType = "arraybuffer";
+    switch(data_type){
+        /*PEOPLE DATA*/
+        case "people":
+            for(var i=0; i<data.length; i++)
+            {
+                var data_arr = data[i].split(", ");
+                for(var j=0; j<data_arr.length; j++)
+                    data_arr[j] = capitalizeFirstLetter(data_arr[j].toLowerCase());
+                var person = data_arr.join(" ");
+                person_names_list.push(person);
+            }
+            updateListDB();
+            break;
+        /*GROUPS DATA*/
+        case "groups":
+            for(var i=0; i<data.length; i++)
+            {
+                var group = data[0];
+                groups_list.push(group);   
+            }
+            updateListDB();
+            break;
+        /*BUILDINGS DATA*/
+        case "places":
+            for(var i=0; i<data.length; i++)
+            {
+                var building = data[0];
+                buildings_list.push(building);          
+            }
+            updateListDB();
+            break;
     }
-    xhr.open('GET', url);
-    xhr.setRequestHeader('Authorization',
-    'Bearer ' + oauthToken);
-    
-    xhr.send(); 
-    
-  }
-function startGoogleAPI() {
-    if(!gapi.auth2)
-    {
-        gapi.load("auth2", startGoogleAPI);
-        return;
-    }
+}
 
-    gapi.auth2.init({  client_id: CLIENT_ID, scope: SCOPES.join(' ')})
-    .then(loadData
-        ,function(){
-        console.log("Error authenicate google client")
-      })
-  }
 function generate_lists(jsons_array, onComplete)
 {
     p_json = jsons_array[0];

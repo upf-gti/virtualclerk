@@ -88,6 +88,14 @@ function init_websocket () {
             btn.style.visibility = "visible";
           }
           break;
+        
+        case "return_data":
+          loadData(json.data_type, json.data);
+          break;
+        case "info":
+          if(json.data.includes("connected to session with token"))
+            requestData();
+          break;
       }
     }
     catch (e) {
