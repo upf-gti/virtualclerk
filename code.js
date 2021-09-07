@@ -104,21 +104,25 @@ var CORE = {
 		recognition.onstart = function(event){
 			start_recognition = true;
 			console.log("Recognition Start");
+			var that = this;
+			if(that.tabRemote)
+				that.tabRemote.sendMessage({type: "app_action", action: "recognition_start" })
 			//var LS = CORE.iframe.contentWindow.LS;
 			//LS.Globals.processMsg(JSON.stringify({control:3}), true); //listening
 		}
-		recognition.onaudiostart = function()
+		/*recognition.onaudiostart = function()
 		{
 			var that = this;
 			if(that.tabRemote)
 				that.tabRemote.sendMessage({type: "app_action", action: "speech_start" })
-		}.bind(this)
+		}.bind(this)*/
 		recognition.onaudioend = function()
 		{
 			var that = this;
 			if(that.tabRemote)
-				that.tabRemote.sendMessage({type: "app_action", action: "speech_end" })
+				that.tabRemote.sendMessage({type: "app_action", action: "recognition_end" })
 		}.bind(this)
+
 		recognition.onspeechstart = function(){
 			var LS = CORE.iframe.contentWindow.LS;
 			if(LS)
@@ -126,7 +130,9 @@ var CORE = {
 				state = LS.Globals.LISTENING;
 				LS.Globals.processMsg(JSON.stringify({control:LS.Globals.LISTENING}), true);
 			}
-			
+			var that = this;
+			if(that.tabRemote)
+				that.tabRemote.sendMessage({type: "app_action", action: "speech_start" })
 			console.log("LISTENING(speech start)")
 
 		}.bind(this)
@@ -138,7 +144,9 @@ var CORE = {
 				state = LS.Globals.PROCESSING;
 				LS.Globals.processMsg(JSON.stringify({control:LS.Globals.PROCESSING}), true);
 			}
-			
+			var that = this;
+			if(that.tabRemote)
+			that.tabRemote.sendMessage({type: "app_action", action: "speech_end" })
 			console.log("PROCESSING (speech end)")
 			
 		}.bind(this)
