@@ -562,8 +562,11 @@ var CORE = {
 						//disable recognition in the app so it does not try to listen as the tablet is muted
 						recognition_enabled = !recognition_enabled;
 						// Sennd ACK message to tablet to change styles, views...
-						if(that.tabRemote)
-							that.tabRemote.sendMessage({type: "app_action", action: "mute_toggled" })
+						if(this.tabRemote)
+						{
+							console.log("Sending mute message");
+							this.tabRemote.sendMessage({type: "app_action", action: "mute_toggled" })
+													}
 					}
 					break;
 			}
