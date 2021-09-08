@@ -229,7 +229,16 @@ wss.on('connection', function connection(ws) {
                             time:object_message.time || "no-time"
                         } 
                 
-                    }   
+                    } 
+                    // Received a mute from the tablet
+                    if(object_message.action && object_message.action=="mute" ) 
+                    {
+                        msg = {
+                          type:"tab_action", 
+                          action: "mute",
+                          time:object_message.time || "no-time"
+                      } 
+                    }
                     break;
 
                 case "app_action": 

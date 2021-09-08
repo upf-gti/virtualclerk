@@ -14,6 +14,8 @@ var groups_list = [];
 var buildings_list = [];
 var current_data_source = person_names_list;
 
+var muted = false;
+
 var URL_PEOPLE = "https://drive.google.com/file/d/1R7Psnyfxj9qYtE9Qli6JXR3ehj25NTtj/view?usp=sharing"//"https://webglstudio.org/users/dmoreno/projects/finder/fields.xlsx";
 var URL_GROUPS =  "https://drive.google.com/file/d/1ar4j46cg-Ftxix4XZhO-IBepnXkJnMwI/view?usp=sharing"
 var URL_BUILDINGS =  "https://drive.google.com/file/d/1h3itEf8YwZP2pdDa0gZK-9D1N5E0zcyg/view?usp=sharing"
@@ -223,6 +225,8 @@ function setEvents()
             alert('You have to write and select something')
         window.current_input = input;
         document.getElementById("myInput").value = "";
+        var cnt = document.getElementById("buttons-container");
+        cnt.style.display ='block'; 
         // send input to the server
         var response_message = {type:"response_data", data:input}
         ws.send(JSON.stringify(response_message));
@@ -233,6 +237,27 @@ function setEvents()
 
         }*/
     });
+
+    document.getElementById("mute-btn").addEventListener("click", function() 
+    {
+        // mute = !mute;
+        var btn = document.getElementById("mute-btn");
+        var micro = document.getElementById("speech-btn");
+        if(btn.classList.contains("active"))
+        {
+            btn.classList.remove("active");
+            micro.classList.add("anim");
+        }
+        else
+        {
+            btn.classList.add("active");
+            micro.classList.remove("anim");
+        }
+
+        var init_message = {type:"tab_action", action:"mute", time:timestamp}
+        ws.send(JSON.stringify(init_message));
+    });
+
     document.getElementById("play-btn").addEventListener("click", function() {
         window.start = true;
         document.getElementById("play-btn").classList.remove("w3-red-color")

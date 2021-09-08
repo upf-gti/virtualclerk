@@ -12,6 +12,8 @@ const modes = { DEBUG:0, RELEASE:1 };
 var state = 2; //WAITING
 var counter = 0;
 
+var recognition_enabled = true;
+
 var url = "webglstudio.org/port/9001/ws/"//"dtic-recepcionist-kbnli.s.upf.edu:8765";
 var CORE = {
 	log_container: null,
@@ -107,18 +109,20 @@ var CORE = {
 			//var LS = CORE.iframe.contentWindow.LS;
 			//LS.Globals.processMsg(JSON.stringify({control:3}), true); //listening
 		}
+
 		recognition.onaudiostart = function()
 		{
 			var that = this;
 			if(that.tabRemote)
-				that.tabRemote.sendMessage({type: "app_action", action: "speech_start" })
+				that.tabRemote.sendMessage({type: "app_action", action: "recognition_start" })
 		}.bind(this)
 		recognition.onaudioend = function()
 		{
 			var that = this;
 			if(that.tabRemote)
-				that.tabRemote.sendMessage({type: "app_action", action: "speech_end" })
+				that.tabRemote.sendMessage({type: "app_action", action: "recognition_end" })
 		}.bind(this)
+
 		recognition.onspeechstart = function(){
 			var LS = CORE.iframe.contentWindow.LS;
 			if(LS)
@@ -128,6 +132,9 @@ var CORE = {
 			}
 			
 			console.log("LISTENING(speech start)")
+			var that = this;
+			if(that.tabRemote)
+				that.tabRemote.sendMessage({type: "app_action", action: "speech_start" })
 
 		}.bind(this)
 		recognition.onspeechend = function(){
@@ -138,10 +145,13 @@ var CORE = {
 				state = LS.Globals.PROCESSING;
 				LS.Globals.processMsg(JSON.stringify({control:LS.Globals.PROCESSING}), true);
 			}
-			
+			var that = this;
+			if(that.tabRemote)
+				that.tabRemote.sendMessage({type: "app_action", action: "speech_end" })
 			console.log("PROCESSING (speech end)")
 			
 		}.bind(this)
+
 		recognition.onend = function(event){
 			console.log("Recognition stopped");
 			start_recognition = false;
@@ -419,92 +429,103 @@ var CORE = {
 
 	processMessage: function( msg )
 	{
-		if(msg.type=="system")
-			return;
-		var LS = CORE.iframe.contentWindow.LS;
-		state = LS.Globals.SPEAKING;
-		if(msg.content.includes("name and surname"))
+		if(recognition_enabled)
 		{
-			//msg.content = "Could you type the name and surname on the tablet, please?";
-			/*if(finder)
-				finder.changeWaitingView()*/
-			this.tabRemote.sendMessage({type:"request_data", data: "person"});
-		}
-		var obj = { speech: { text: msg.content }, control: LS.Globals.SPEAKING }; //speaking
-		//show on console
-		if(msg.type == "request")
-		{
-			if(this.mode == modes.DEBUG)
-				this.showMessage( msg.content );
-			if(this.isFirstMsg && msg.content!="")
+			if(msg.type=="system")
+				return;
+			var LS = CORE.iframe.contentWindow.LS;
+			state = LS.Globals.SPEAKING;
+			if(msg.type == "response_data")
 			{
-				this.isFirstMsg = false;
-				//obj["gesture"] = {lexeme:"wave"};
+				recognition.start();
+				// debugger;
+				start_recognition = true;
 			}
-			else{
-
-				if(Math.random()<0.5)
-					obj["gesture"] = {lexeme:"speaking"};
-			}
-			;
-		}
-
-		if(msg.content == "See you next time, bye.")
-		{
-			this.isFirstMsg = true;
-			this.start = false;
-			recognition.stop();
-			start_recognition = false;
-			/*if(finder.start)
-				finder.resetView()*/
-			this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
-		}
-
-		console.log("message processed: " + msg.content)
-
-				//show on character
-		if(!CORE.iframe.contentWindow.LS)
-			return;
-		var LS = CORE.iframe.contentWindow.LS;
-
-		var places = ["cafeteria", "bar", "library", "auditori","auditorium", "restaurant", "secretaria", "library", "550" ,"551", "552", "553","554"];
-
-		for(var i in places)
-		{
-			var place = places[i];
-
-			if(msg.content.toLowerCase().includes(place))
+			if(msg.content.includes("name and surname"))
 			{
-
-				//if(Math.random()<0.5)
-				obj["gesture"] = {lexeme:"show", start:0, ready:1, strokeStart:1.5, end:3};
-				if(place=="secretaria")
-					place="550";
-				if(place=="auditorium")
-					place="auditori"
-				if(place == "bar" || place == "restaurant")	  //hardcoded
-					place = "cafeteria";
-
-				var path = "https://webglstudio.org/projects/virtualclerk/imgs/mapa-"+ place + ".jpg";
-				var LSQ = CORE.iframe.contentWindow.LSQ;
-				LS.RM.load(path);
-				var map = LSQ.get("map");
-				var woman = LSQ.get("background");
-				if(map && woman)
+				//msg.content = "Could you type the name and surname on the tablet, please?";
+				/*if(finder)
+					finder.changeWaitingView()*/
+				this.tabRemote.sendMessage({type:"request_data", data: "person"});
+				recognition.stop();
+	
+			}
+			var obj = { speech: { text: msg.content }, control: LS.Globals.SPEAKING }; //speaking
+			//show on console
+			if(msg.type == "request")
+			{
+				if(this.mode == modes.DEBUG)
+					this.showMessage( msg.content );
+				if(this.isFirstMsg && msg.content!="")
 				{
-					map.material.textures.color.texture = path;
-					var mapPos = map.transform.position.clone();
-					var mapTarget = LSQ.get("mapTarget").transform.position;
-					LS.Tween.easeProperty( map.transform, "position", mapTarget, 1)
-					setTimeout(function(){LS.Tween.easeProperty(map.transform, "position", mapPos, 1)}	, 8000)
-	/*				var cameraPos = LS.GlobalScene.root.camera.center.clone();
-					LS.Tween.easeProperty( LS.GlobalScene.root.camera, "center", map.transform.position, 3 )
-					setTimeout(function(){LS.Tween.easeProperty( LS.GlobalScene.root.camera, "center", cameraPos, 3 )}	, 8000)*/
+					this.isFirstMsg = false;
+					//obj["gesture"] = {lexeme:"wave"};
+				}
+				else{
+	
+					if(Math.random()<0.5)
+						obj["gesture"] = {lexeme:"speaking"};
+				}
+				;
+			}
+	
+			if(msg.content == "See you next time, bye.")
+			{
+				this.isFirstMsg = true;
+				this.start = false;
+				recognition.stop();
+				start_recognition = false;
+				/*if(finder.start)
+					finder.resetView()*/
+				this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
+			}
+	
+			console.log("message processed: " + msg.content)
+	
+					//show on character
+			if(!CORE.iframe.contentWindow.LS)
+				return;
+			var LS = CORE.iframe.contentWindow.LS;
+	
+			var places = ["cafeteria", "bar", "library", "auditori","auditorium", "restaurant", "secretaria", "library", "550" ,"551", "552", "553","554"];
+	
+			for(var i in places)
+			{
+				var place = places[i];
+	
+				if(msg.content.toLowerCase().includes(place))
+				{
+	
+					//if(Math.random()<0.5)
+					obj["gesture"] = {lexeme:"show", start:0, ready:1, strokeStart:1.5, end:3};
+					if(place=="secretaria")
+						place="550";
+					if(place=="auditorium")
+						place="auditori"
+					if(place == "bar" || place == "restaurant")	  //hardcoded
+						place = "cafeteria";
+	
+					var path = "https://webglstudio.org/projects/virtualclerk/imgs/mapa-"+ place + ".jpg";
+					var LSQ = CORE.iframe.contentWindow.LSQ;
+					LS.RM.load(path);
+					var map = LSQ.get("map");
+					var woman = LSQ.get("background");
+					if(map && woman)
+					{
+						map.material.textures.color.texture = path;
+						var mapPos = map.transform.position.clone();
+						var mapTarget = LSQ.get("mapTarget").transform.position;
+						LS.Tween.easeProperty( map.transform, "position", mapTarget, 1)
+						setTimeout(function(){LS.Tween.easeProperty(map.transform, "position", mapPos, 1)}	, 8000)
+		/*				var cameraPos = LS.GlobalScene.root.camera.center.clone();
+						LS.Tween.easeProperty( LS.GlobalScene.root.camera, "center", map.transform.position, 3 )
+						setTimeout(function(){LS.Tween.easeProperty( LS.GlobalScene.root.camera, "center", cameraPos, 3 )}	, 8000)*/
+					}
 				}
 			}
+	
+			LS.Globals.processMsg(JSON.stringify(obj), true);
 		}
-
-		LS.Globals.processMsg(JSON.stringify(obj), true);
 
 	}, 
 	processTabletMessage: function(message) // messages recieved from RecepcionistaDTIC Tablet
@@ -513,7 +534,7 @@ var CORE = {
 		// from server is json)
 		try {
 			var json = message;
-	
+			console.log(json);
 			//Get current time
 			var date = new Date();
 			var hours = (date.getHours()>9)? date.getHours(): "0"+date.getHours();
@@ -535,6 +556,14 @@ var CORE = {
 					{
 						//start_conversation
 						this.start = true;
+					}
+					if(json.action == "mute")
+					{
+						//disable recognition in the app so it does not try to listen as the tablet is muted
+						recognition_enabled = !recognition_enabled;
+						// Sennd ACK message to tablet to change styles, views...
+						if(that.tabRemote)
+							that.tabRemote.sendMessage({type: "app_action", action: "mute_toggled" })
 					}
 					break;
 			}

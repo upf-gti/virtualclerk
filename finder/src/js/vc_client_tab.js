@@ -1,7 +1,7 @@
 function init_websocket () {
   // if user is running mozilla then use it's built-in WebSocket
   window.WebSocket = window.WebSocket || window.MozWebSocket;
-
+  var muted = false;
   var connection = new WebSocket('wss://webglstudio.org/port/9004/ws/');
   if(connection.readyState == WebSocket.CONNECTING)
   {
@@ -46,6 +46,8 @@ function init_websocket () {
             btn.style.visibility = "hidden";
             var speech_btn = document.getElementById("speech-btn");
             speech_btn.style.visibility = "hidden";
+            var cnt = document.getElementById("buttons-container");
+            cnt.style.display ='None'; 
 
           break;
 
@@ -70,8 +72,10 @@ function init_websocket () {
             var waiting_cnt = document.getElementById("waiting-container")
             waiting_cnt.style.visibility = "visible";
           }
-          if(json.action == "speech_start")
+
+          if(json.action == "recognition_start")
           {
+            console.log('Agent starts recognizing');
             var btn = document.getElementById("play-btn");
             btn.style.visibility = "hidden";
             
@@ -79,13 +83,42 @@ function init_websocket () {
             speech_btn.classList.add("w3-red-color");
             speech_btn.style.visibility = "visible";
           }
-          if(json.action == "speech_end")
+
+          if(json.action == "recognition_end")
           {
+            console.log('Agent ends recognizing');
             var speech_btn = document.getElementById("speech-btn");
             speech_btn.style.visibility = "hidden";
 
             var btn = document.getElementById("play-btn");
             btn.style.visibility = "visible";
+          }
+
+          if(json.action == "mute_toggled")
+          {
+            muted = !muted;
+          }
+          // just change this if the tablet is not muted
+          if(json.action == "speech_start")
+          {
+            if(!muted)
+            {
+              console.log('User starts talking');
+              var speech_btn = document.getElementById("speech-btn");
+              if(!speech_btn.classList.contains('anim'))
+                speech_btn.classList.add('anim');
+            }
+          }
+
+          if(json.action == "speech_end")
+          {
+            if(!muted)
+            {
+              console.log('User ends talking');
+              var speech_btn = document.getElementById("speech-btn");
+              if(speech_btn.classList.contains('anim'))
+                speech_btn.classList.remove('anim');
+            }
           }
           break;
         
