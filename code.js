@@ -131,7 +131,7 @@ var CORE = {
 				LS.Globals.processMsg(JSON.stringify({control:LS.Globals.LISTENING}), true);
 			}
 			
-			console.log("LISTENING(speech start)")
+			// console.log("LISTENING(speech start)")
 			var that = this;
 			if(that.tabRemote)
 				that.tabRemote.sendMessage({type: "app_action", action: "speech_start" })
@@ -148,12 +148,12 @@ var CORE = {
 			var that = this;
 			if(that.tabRemote)
 				that.tabRemote.sendMessage({type: "app_action", action: "speech_end" })
-			console.log("PROCESSING (speech end)")
+			// console.log("PROCESSING (speech end)")
 			
 		}.bind(this)
 
 		recognition.onend = function(event){
-			console.log("Recognition stopped");
+			console.log("Recognition stopped from recognition.onend()");
 			start_recognition = false;
 
 		}
@@ -313,11 +313,11 @@ var CORE = {
 					start_recognition = false;
 					state = LS.Globals.PROCESSING
 						LS.Globals.processMsg(JSON.stringify({control: state}), true);
-					console.log("stop")
+					// console.log("stop")
 				}
-				else if(!isSpeaking&&!start_recognition)
+				else if(!isSpeaking&&!start_recognition&&recognition_enabled)
 				{
-					console.log("start")
+					// console.log("start")
 					recognition.start();
 					start_recognition = true;
 					if(state==LS.Globals.SPEAKING)
@@ -561,10 +561,11 @@ var CORE = {
 					{
 						//disable recognition in the app so it does not try to listen as the tablet is muted
 						recognition_enabled = !recognition_enabled;
+						recognition.stop()
 						// Sennd ACK message to tablet to change styles, views...
 						if(this.tabRemote)
 						{
-							console.log("Sending mute message");
+							// console.log("Sending mute message");
 							this.tabRemote.sendMessage({type: "app_action", action: "mute_toggled" })
 													}
 					}
