@@ -73,6 +73,21 @@ function init_websocket () {
             waiting_cnt.style.visibility = "visible";
           }
 
+          if(json.action == "mute_toggled")
+          {
+            muted = !muted;
+            var speech_btn = document.getElementById("speech-btn");
+
+            if(muted==true)
+              if(!speech_btn.classList.contains('muted'))
+                speech_btn.classList.add('muted');
+            
+            else
+              if(speech_btn.classList.contains('muted'))
+                speech_btn.classList.remove('muted');
+            
+          }
+
           if(json.action == "recognition_start")
           {
             console.log('Agent starts recognizing');
@@ -86,18 +101,18 @@ function init_websocket () {
 
           if(json.action == "recognition_end")
           {
-            console.log('Agent ends recognizing');
-            var speech_btn = document.getElementById("speech-btn");
-            speech_btn.style.visibility = "hidden";
-
-            var btn = document.getElementById("play-btn");
-            btn.style.visibility = "visible";
+            if(!muted)
+            {
+              console.log('Agent ends recognizing');
+              var speech_btn = document.getElementById("speech-btn");
+              speech_btn.style.visibility = "hidden";
+  
+              var btn = document.getElementById("play-btn");
+              btn.style.visibility = "visible";
+            }
           }
 
-          if(json.action == "mute_toggled")
-          {
-            muted = !muted;
-          }
+          
           // just change this if the tablet is not muted
           if(json.action == "speech_start")
           {

@@ -303,6 +303,13 @@ input:focus {
   font-size:400px;
   visibility: hidden;
   margin-left: 50px;
+  color: #A7192B !important;
+}
+
+.fa.fa-microphone.w3-red-color.absolut.muted{
+  font-size:400px;
+  visibility: hidden;
+  margin-left: 50px;
   color: grey !important;
 }
 
