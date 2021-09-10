@@ -12,7 +12,7 @@ const modes = { DEBUG:0, RELEASE:1 };
 var state = 2; //WAITING
 var counter = 0;
 
-var recognition_enabled = true;
+var recognition_enabled = false;
 
 var url = "webglstudio.org/port/9001/ws/"//"dtic-recepcionist-kbnli.s.upf.edu:8765";
 var CORE = {
@@ -292,34 +292,29 @@ var CORE = {
 			{
 				this.mindRemote.sendMessage( {type:"start", content:""} );
 				this.isFirstMsg = false;
-				recognition.stop();
-				start_recognition = false;
+				recognition_enabled = true;
+				//if(start_recognition) recognition.stop()
 				window.requestAnimationFrame(this.appLoop.bind(this));
 				return;
 			}
 			var LS = CORE.iframe.contentWindow.LS;
 			if(LS && LS.Globals){
-				//recognition.start();
 
 				var isSpeaking = LS.Globals.speaking;
-				/*if(finder&&finder.current_input!="")
-				{
-					this.userMessage(finder.current_input)
-					finder.current_input = "";
-				}*/
+		
 				if(isSpeaking&&start_recognition)
 				{
 					recognition.stop();
-					start_recognition = false;
+					//start_recognition = false;
 					state = LS.Globals.PROCESSING
-						LS.Globals.processMsg(JSON.stringify({control: state}), true);
-					// console.log("stop")
+					LS.Globals.processMsg(JSON.stringify({control: state}), true);
+					
 				}
 				else if(!isSpeaking&&!start_recognition&&recognition_enabled)
 				{
 					// console.log("start")
 					recognition.start();
-					start_recognition = true;
+					//start_recognition = true;
 					if(state==LS.Globals.SPEAKING)
 					{
 						state = LS.Globals.LISTENING;
@@ -429,26 +424,25 @@ var CORE = {
 
 	processMessage: function( msg )
 	{
-		if(recognition_enabled)
-		{
+		/*if(recognition_enabled)
+		{*/
 			if(msg.type=="system")
 				return;
 			var LS = CORE.iframe.contentWindow.LS;
 			state = LS.Globals.SPEAKING;
-			if(msg.type == "response_data")
+			/*if(msg.type == "response_data")
 			{
+				start_recognition = true;
 				recognition.start();
 				// debugger;
-				start_recognition = true;
-			}
+				
+			}*/
 			if(msg.content.includes("name and surname"))
 			{
-				//msg.content = "Could you type the name and surname on the tablet, please?";
-				/*if(finder)
-					finder.changeWaitingView()*/
+				
 				this.tabRemote.sendMessage({type:"request_data", data: "person"});
-				recognition.stop();
-	
+				
+				if(start_recognition) recognition_enabled = false;
 			}
 			var obj = { speech: { text: msg.content }, control: LS.Globals.SPEAKING }; //speaking
 			//show on console
@@ -473,10 +467,7 @@ var CORE = {
 			{
 				this.isFirstMsg = true;
 				this.start = false;
-				recognition.stop();
-				start_recognition = false;
-				/*if(finder.start)
-					finder.resetView()*/
+				if(start_recognition) recognition.stop();
 				this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
 			}
 	
@@ -525,7 +516,7 @@ var CORE = {
 			}
 	
 			LS.Globals.processMsg(JSON.stringify(obj), true);
-		}
+		/*}*/
 
 	}, 
 	processTabletMessage: function(message) // messages recieved from RecepcionistaDTIC Tablet
@@ -548,6 +539,7 @@ var CORE = {
 				case "response_data":
 					
 					this.mindRemote.requestAnswer( json.data );
+					recognition_enabled = true;
 					// json.data;
 					break;
 		

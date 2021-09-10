@@ -148,7 +148,7 @@ server.on('connection', function connection(client) {
 
 	//connection from client to server
 	client.on('message', function incoming( message ) {
-		console.log( "MSG", message );
+		//console.log( "MSG", message );
 
 		if(this.bridge && this.readyState === this.bridge.OPEN)
 		{

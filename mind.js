@@ -56,7 +56,7 @@ MindRemote.prototype.processServerMessage = function(event)
 {
 	var data = event.data;
 	var msg = JSON.parse( data );
-	console.log(msg);
+	//console.log(msg);
 	if(this.onMessage)
 		this.onMessage(msg);
 }
