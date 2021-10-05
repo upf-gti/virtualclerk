@@ -403,7 +403,7 @@ var CORE = {
 		}*/
 
 		if(text_message.toLowerCase().includes("bye") || text_message.toLowerCase().includes("shut up")){
-			mind.sendMessage( {type:"end", content:""} );
+			mind.sendMessage( {type:"end", content:text_message} ); 
 			//this.isFirstMsg = true;
 		//	return;
 		}
