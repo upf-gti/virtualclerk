@@ -390,7 +390,7 @@ var CORE = {
 		if(this.mode == modes.DEBUG)
 			this.showMessage( text_message, "me" );
 		//this.mind.requestAnswer( text_message );
-		text_message = text_message.replace(/\b\w/g, l => l.toUpperCase());
+		//text_message = text_message.replace(/\b\w/g, l => l.toUpperCase());
 
 		/*if(text_message.toLowerCase().includes("person"))
 		{
