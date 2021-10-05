@@ -259,7 +259,18 @@ function setEvents()
     });
 
     document.getElementById("play-btn").addEventListener("click", function() {
+        var bkg = document.getElementById("dark-bkg")
+        bkg.style.display = "block"
+        var elem = document.getElementById("legalterms")
+        elem.style.display = "block"
+    });
+
+    document.getElementById("accept-terms").addEventListener("click", function() {
         window.start = true;
+        var bkg = document.getElementById("dark-bkg")
+        bkg.style.display = "none"
+        var elem = document.getElementById("legalterms")
+        elem.style.display = "none"
         document.getElementById("play-btn").classList.remove("w3-red-color")
         document.getElementById("play-btn").classList.add("w3-gray-color")
         // send start conversation "event" to the server
@@ -270,6 +281,13 @@ function setEvents()
             alert('Implement sendInfo() method, and send: ' + input)
 
         }*/
+    });
+
+    document.getElementById("cancel-terms").addEventListener("click", function() {
+        var bkg = document.getElementById("dark-bkg")
+        bkg.style.display = "none"
+        var elem = document.getElementById("legalterms")
+        elem.style.display = "none"
     });
     // Just for the moment, to toggle the waiting screen
     document.addEventListener("keypress", function(e){
