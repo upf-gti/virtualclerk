@@ -15,18 +15,8 @@
 </head>
 <body>
 	<div id="main" >
-		<div id="typing" class="console" style= "display:none">
-			<div class='log'></div>
-			<div class='typing'>
-				<input type='text' placeHolder="type here..."/>
-				<button id="send">Send</button>
-				<button id="mic" class='' ></button>
-			</div>
-			<div id="div_start">
-
-			</div>
-		</div>
-		<div id="character"><iframe src="" ></iframe></div>
+		
+		<div id="character"></div>
 	</div>
 	<!-- The Modal -->
 	<div id="reconnecting" class="modal">
@@ -46,7 +36,11 @@
 		  <button id="btn-session">Connect</button>
 		</div>
 	</div>
-
+	<script  src="https://apis.google.com/js/api.js"></script>
+	<script type="text/javascript" src="scene/js/extra/gl-matrix-min.js"></script>
+	<script type="text/javascript" src="scene/js/extra/litegl.js"></script>
+	<script type="text/javascript" src="scene/js/extra/litegraph.js"></script>
+	<script type="text/javascript" src="scene/js/extra/litescene.js"></script>
 	<script type="text/javascript" src="code.js"></script>
 	<script type="text/javascript" src="mind.js"></script>
 	<!--<script type="text/javascript" src="./dialogflow/mindDialogFlow.js"></script>-->

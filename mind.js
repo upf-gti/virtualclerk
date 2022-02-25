@@ -13,10 +13,10 @@ MindRemote.prototype.connect = function( url, on_connected, on_error )
 		this.socket.close();
 
 	var that = this;
-	this.socket = new WebSocket( "wss://" + url );
+	this.socket = new WebSocket(  url );
 	this.socket.onopen = function (){
 		console.log("SENDING CONNECTING MESSAGE");
-		this.send( JSON.stringify( { type:"connect", url : "ws://dtic-recepcionist-kbnli.s.upf.edu:8765" } ) )
+		/*this.send( JSON.stringify( { type:"connect", url : "ws://dtic-recepcionist-kbnli.s.upf.edu:8765" } ) )*/
 		if(on_connected)
 			on_connected();
 	};
@@ -42,7 +42,7 @@ MindRemote.prototype.sendMessage = function( message )
 {
 	if(!this.socket || this.socket.readyState != WebSocket.OPEN)
 	{
-		log("no connection","sys");
+		console.log("no connection");
 		return false;
 	}
 

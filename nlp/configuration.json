@@ -1,0 +1,13 @@
+{
+	"path_to_researchers": "./data_people.csv",
+	"path_to_groups": "./data_groups.csv",
+	"path_to_places": "./data_places.csv",
+	"people_file_id":"1R7Psnyfxj9qYtE9Qli6JXR3ehj25NTtj",
+	"places_file_id":"1h3itEf8YwZP2pdDa0gZK-9D1N5E0zcyg",
+	"groups_file_id": "1ar4j46cg-Ftxix4XZhO-IBepnXkJnMwI",
+	"threshold_similarity": 0.3,
+	"websocket_port": 8765,
+	"ip": "10.55.0.7",
+	"timeout": 20, 
+	"api": "http://127.0.0.1:3000/"
+}

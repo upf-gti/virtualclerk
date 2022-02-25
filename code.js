@@ -7,107 +7,43 @@ recognition.interimResults = false;
 recognition.maxAlternatives = 1;
 var final_transcript = "";
 var start_recognition = false;
-const modes = { DEBUG:0, RELEASE:1 };
 
 var state = 2; //WAITING
 var counter = 0;
 
 var recognition_enabled = false;
 
-var url = "webglstudio.org/port/9001/ws/"//"dtic-recepcionist-kbnli.s.upf.edu:8765";
+var url = "dtic-recepcionist.upf.edu/port/8765/ws/" //"ws://dtic-recepcionist-kbnli.s.upf.edu:8765"//webglstudio.org/port/9001/ws/"//"dtic-recepcionist-kbnli.s.upf.edu:8765";
+var tabUrl = "dtic-recepcionist.upf.edu/port/3001/ws/"
+//var tabUrl = "dtic-recepcionist.upf.edu:3001"
 var CORE = {
-	log_container: null,
 	socket: null,
 	isFirstMsg:true,
-	useLocal: false,
-	mode: modes.RELEASE,
 	lastQuestion: "",
 	finder: null,
 	start: false,
-	init: function ( root )
+	init: function (  )
 	{
-		//finder = window.open("./finder/index.html", "secondary");
 		var that = this;
-
-		root = root || document.querySelector(".console");
-		if(!root)
-			throw("no console found");
-
-
-		/*recognition.onspeechstart = function() {
-		  console.log('Speech has been detected');
-		}*/
-		if(this.mode == modes.DEBUG)
-		{
-			// D E B U G
-			//---------------------input TEXT-------------------------
-			//init interface
-			this.log_container = root.querySelector(".log");
-			this.input = root.querySelector(".typing input");
-			var button = root.querySelector(".typing button");
-			button.addEventListener("click",function(e){
-				if(that.input.value == "")
-					return;
-				if(that.input.value[0] == "/")
-					that.processCommand( that.input.value.substr(1) );
-				else
-					that.userMessage( that.input.value );
-				that.input.value = "";
-			});
-
-			this.input.addEventListener("keydown",function(e){
-				if(e.keyCode == 13) //enter
-				{
-					if(this.value == "")
-						return;
-					if(this.value[0] == "/")
-						that.processCommand( this.value.substr(1) );
-					else
-						that.userMessage( this.value );
-					this.value = "";
-					return;
-				}
-			});
-
-			//---------------------input MIC-------------------------
-			var mic = root.querySelector(".typing button#mic ");
-
-			mic.addEventListener("click",function(e){
-				if(start_recognition){
-					recognition.stop();
-					start_recognition = false;
-				}
-				else{
-					recognition.start();
-					start_recognition = true;
-					mic.setAttribute("class","animated");
-					that.input.value = "";
-				}
-				//that.startRecognition(this);
-
-			});
-			recognition.onspeechend = function(event)
-			{
-
-				mic.setAttribute("class","");
-			}
-		}
-//		----------------------------------------------------
 		//character
 		var iframe = this.iframe = document.querySelector("#character iframe");
-		iframe.src = "https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2FDTICReceptionist%2FRecepcionistaDTIC.scene.json&autoplay=true"//"https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2Fscenes%2FLaraFacialAnimations.scene.json";
-
-		if(!CORE.iframe.contentWindow)
-			return;
-
+		//iframe.src = "https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2FDTICReceptionist%2FRecepcionistaDTIC.scene.json&autoplay=true"//"https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2Fscenes%2FLaraFacialAnimations.scene.json";
+		
+		var player = new LS.Player({
+			width:800, height:600,
+			resources: "scene",
+			container_id:"character"
+		});
+		
+		player.loadScene("scene/scene.json", function(){this.globals = window}.bind(this));
+		//document.querySelector("#character").appendChild( player.canvas )
 		window.onmessage = this.appLoop.bind(this)
 
 		//-------------------------------------------------------Recognition Events
 		recognition.onstart = function(event){
 			start_recognition = true;
 			console.log("Recognition Start");
-			//var LS = CORE.iframe.contentWindow.LS;
-			//LS.Globals.processMsg(JSON.stringify({control:3}), true); //listening
+		
 		}
 
 		recognition.onaudiostart = function()
@@ -124,7 +60,8 @@ var CORE = {
 		}.bind(this)
 
 		recognition.onspeechstart = function(){
-			var LS = CORE.iframe.contentWindow.LS;
+			//var LS = CORE.iframe.contentWindow ? CORE.iframe.contentWindow.LS : window.LS;
+			var LS = window.LS;
 			if(LS)
 			{
 				state = LS.Globals.LISTENING;
@@ -138,7 +75,7 @@ var CORE = {
 
 		}.bind(this)
 		recognition.onspeechend = function(){
-			var LS = CORE.iframe.contentWindow.LS;
+			var LS = window.LS;
 
 			if(LS)
 			{
@@ -166,14 +103,12 @@ var CORE = {
 			for (var i = event.resultIndex; i < event.results.length; ++i) {
 
 			  if (event.results[i].isFinal) {
-				var LS = CORE.iframe.contentWindow.LS;
+				var LS = window.LS;
 				//LS.Globals.processMsg(JSON.stringify({control:1}), true); //processing
 				state = LS.Globals.PROCESSING;
 
 				final_transcript += event.results[i][0].transcript;
-				if(this.mode == modes.DEBUG){
-					mic.class ="";
-				}
+				
 				interim_transcript = ""
 
 			  } else {
@@ -183,28 +118,22 @@ var CORE = {
 			//that.startRecognition();
 			final_transcript = capitalize(final_transcript);
 
-			if(this.mode == modes.DEBUG)
-			{
-				that.input.value = final_transcript;
-			}
-			console.log("USER SPEECH: "+final_transcript)
-			if(that.mode == modes.RELEASE){
-				that.userMessage( final_transcript );
-
-
-			}
+			that.userMessage( final_transcript );
+		
 			final_transcript = "";
 			recognition.stop();
 		}
 
 
 		//use TALN server
+		var protocol = location.protocol == "https:" ? "wss://" : "ws:";
+		//var protocol = "ws://"
 		this.mindRemote = new MindRemote();
-		this.mindRemote.connect(url, this.onConnectionStarted.bind(this), this.onConnectionError.bind(this));
+		this.mindRemote.connect(protocol+url, this.onConnectionStarted.bind(this), this.onConnectionError.bind(this, "nlp"));
 		this.mindRemote.onMessage = this.processMessage.bind(this);
 		// connect to Tablet Server
 		this.tabRemote = new MindRemote();
-		this.tabRemote.connect("webglstudio.org/port/9004/ws/", this.onConnectionStarted.bind(this), this.onConnectionError.bind(this));
+		this.tabRemote.connect(protocol+tabUrl, this.onConnectionStarted.bind(this), this.onConnectionError.bind(this,"tablet"));
 		this.tabRemote.onMessage = this.processTabletMessage.bind(this);
 		var that = this;
 
@@ -240,53 +169,13 @@ var CORE = {
 			if(s_input.value!="")
 				s_modal.style.display = "none";
 		}
-
-		
-		var iframeDoc = document.querySelector("iframe").contentWindow.document;
-		iframeDoc.addEventListener("keydown", function(event){
-			event.preventDefault();
-			event.stopPropagation();
-
-			if(event!=undefined && event.keyCode == 68){
-				var console = document.querySelector(".console");
-				var character = document.querySelector("#character");
-				var main = document.querySelector("#main");
-
-				if(console.style.display === "none")
-
-				{
-					main.classList.add("debug");
-					//main.classList.remove("release");
-					character.style.width = "50%";
-					console.style.display = "block";
-					that.mode = modes.DEBUG;
-
-					//iframe.src = "https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2Fscenes%2FLaraFacialAnimations.scene.json";
-
-				}
-				else{
-					//main.classList.add("release");
-					main.classList.remove("debug");
-					console.style.display = "none";
-					character.style.width = "100%";
-					//iframe.src = "https://webglstudio.org/latest/player.html?url=fileserver%2Ffiles%2Fevalls%2Fprojects%2Fscenes%2FLaraFacialAnimations.scene.json";
-					that.mode = modes.RELEASE;
-				}
-			}
-		});
-
-			/*var LS = CORE.iframe.contentWindow.LS;
-			if(LS !=undefined && LS.Globals.speechController.isSpeaking)
-				console.log("SPEAKING")
-			else
-				recognition.start();*/
-	//finder.onload = setEvents
+	
 
 	},
 	appLoop: function()
 	{
 
-		if(CORE.iframe.contentWindow.LS && this.start)
+		if(window && this.start)
 		{
 			if(this.isFirstMsg)
 			{
@@ -297,24 +186,21 @@ var CORE = {
 				window.requestAnimationFrame(this.appLoop.bind(this));
 				return;
 			}
-			var LS = CORE.iframe.contentWindow.LS;
-			if(LS && LS.Globals){
+			var LS = window.LS;
+			if(LS.Globals){
 
 				var isSpeaking = LS.Globals.speaking;
 		
 				if(isSpeaking&&start_recognition)
 				{
 					recognition.stop();
-					//start_recognition = false;
 					state = LS.Globals.PROCESSING
 					LS.Globals.processMsg(JSON.stringify({control: state}), true);
 					
 				}
 				else if(!isSpeaking&&!start_recognition&&recognition_enabled)
 				{
-					// console.log("start")
 					recognition.start();
-					//start_recognition = true;
 					if(state==LS.Globals.SPEAKING)
 					{
 						state = LS.Globals.LISTENING;
@@ -323,10 +209,7 @@ var CORE = {
 					}
 				}
 			}
-		}/* else
-		{
-			setTimeout(this.appLoop().bind(this), 5000);
-		}  */
+		}
 		if(state == 0)
 			counter++;
 		if(counter>5000)
@@ -343,82 +226,39 @@ var CORE = {
 		console.log("Connection started! " + data)
 		//setTimeout(this.mindRemote.sendMessage( {type:"start", content:""} ), 10000)
 		this.displayModal(false);
-		if(this.mode == modes.RELEASE)
-		{
-			// R E L E A S E
-			//recognition.start();
-			//setTimeout(recognition.start()
-			//,1000);
-			recognition.continuous = true;
-
-		}
-
+		
+		recognition.continuous = true;
 
 	},
-	onConnectionError: function(error)
+	onConnectionError: function(server, error)
 	{
 		console.log(error)
 		this.isFirstMsg = true;
 		this.displayModal(true, "Connection error. Trying to reconnect.");
 		var that = this;
-		//var LS = CORE.iframe.contentWindow.LS;
-		//LS.Globals.processMsg(JSON.stringify({control:0}), true); //waiting
-		//recognition.stop();
-
+		
 		setTimeout(function(){
-			that.mindRemote.connect(url, that.onConnectionStarted.bind(that), that.onConnectionError.bind(that));
+			var protocol = location.protocol == "https:" ? "wss://" : "ws:";
+			//var protocol = "ws://"
+			if(server == "nlp")
+				that.mindRemote.connect(protocol+url, that.onConnectionStarted.bind(that), that.onConnectionError.bind(that,"nlp"));
+			else if(server == "tablet")
+				that.tabRemote.connect(protocol+tabUrl, that.onConnectionStarted.bind(that), that.onConnectionError.bind(that,"tablet"));
 		},5000);
-	},
-	connectToServer: function(url)
-	{
-		var that = this;
-		var protocol = location.protocol == "https:" ? "wss://" : "ws:";
-		var url = protocol + url;//CORE.server_url;
-		this.connect(url, function(){
-			that.showMessage("Welcome, ask me anything","sys");
-		});
 	},
 
 	userMessage: function( text_message )
 	{
-		//if(!this.mind)
+		
 		var mind = this.mindRemote;
-		/*if(this.useLocal)
-			mind = this.mind;/*
-/*		if(!this.mindRemote)
-			return;*/
-		if(this.mode == modes.DEBUG)
-			this.showMessage( text_message, "me" );
-		//this.mind.requestAnswer( text_message );
-		//text_message = text_message.replace(/\b\w/g, l => l.toUpperCase());
-
-		/*if(text_message.toLowerCase().includes("person"))
-		{
-			this.lastQuestion = "person";
-			this.processMessage({type:"request", content: "Could you type the name and surname on the tablet, please?"})
-			if(finder)
-				finder.changeWaitingView()
-			//changeWaitingView()
-			return;
-		}*/
+	
+		text_message = text_message.replace(/\b\w/g, l => l.toUpperCase());
 
 		if(text_message.toLowerCase().includes("bye") || text_message.toLowerCase().includes("shut up")){
-			mind.sendMessage( {type:"end", content:text_message} ); 
-			//this.isFirstMsg = true;
-		//	return;
+			mind.sendMessage( {type:"end", content:""} );
+		
 		}
-	/*	if(this.isFirstMsg)
-		{
-
-			//this.mindRemote.sendMessage( {type:"start", content:""} );
-			mind.sendMessage( {type:"start", content:""} );
-				mind.requestAnswer( "Hi" );
-		}
-		else
-		{*/
-//			this.mindRemote.requestAnswer( text_message );
 			mind.requestAnswer( text_message );
-	/*	}*/
 
 	},
 
@@ -428,39 +268,37 @@ var CORE = {
 		{*/
 			if(msg.type=="system")
 				return;
-			var LS = CORE.iframe.contentWindow.LS;
+			var LS = window.LS;
 			state = LS.Globals.SPEAKING;
-			/*if(msg.type == "response_data")
-			{
-				start_recognition = true;
-				recognition.start();
-				// debugger;
-				
-			}*/
-			if(msg.content.includes("name and surname"))
+			
+			if(msg.content.text.includes("name and surname"))
 			{
 				
 				this.tabRemote.sendMessage({type:"request_data", data: "person"});
 				
 				if(start_recognition) recognition_enabled = false;
 			}
-			var obj = { speech: { text: msg.content }, control: LS.Globals.SPEAKING }; //speaking
+			var object = {};
+			if(msg.content && msg.content.data)
+				obj = { type: "behaviours", data: [ { type:"lg", text: msg.content.text, audio: msg.content.data.audio, start:0.1, end:4 }]}; //speaking
+			else
+				obj = { type: "behaviours", data: [ { type:"lg", text: msg.content.text,  start:0.1, end:4 }]};
+			if(msg.content.text.includes("Hi"))
+				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.5,start:0, end:0.5 })
 			//show on console
 			if(msg.type == "request")
 			{
-				if(this.mode == modes.DEBUG)
-					this.showMessage( msg.content );
 				if(this.isFirstMsg && msg.content!="")
 				{
 					this.isFirstMsg = false;
 					//obj["gesture"] = {lexeme:"wave"};
 				}
-				else{
+				/*else{
 	
 					if(Math.random()<0.5)
-						obj["gesture"] = {lexeme:"speaking"};
-				}
-				;
+						obj.data.push({type:"gesture",lexeme:"speaking", start:0, end:2});
+				}*/
+		
 			}
 	
 			if(msg.content == "See you next time, bye.")
@@ -474,9 +312,9 @@ var CORE = {
 			console.log("message processed: " + msg.content)
 	
 					//show on character
-			if(!CORE.iframe.contentWindow.LS)
+			if(!window.LS)
 				return;
-			var LS = CORE.iframe.contentWindow.LS;
+			var LS = window.LS;
 	
 			var places = ["cafeteria", "bar", "library", "auditori","auditorium", "restaurant", "secretaria", "library", "550" ,"551", "552", "553","554"];
 	
@@ -484,11 +322,11 @@ var CORE = {
 			{
 				var place = places[i];
 	
-				if(msg.content.toLowerCase().includes(place))
+				if(msg.content.text.toLowerCase().includes(place))
 				{
 	
 					//if(Math.random()<0.5)
-					obj["gesture"] = {lexeme:"show", start:0, ready:1, strokeStart:1.5, end:3};
+					/*obj.data.push({type:"gesture",lexeme:"show", start:0, ready:1, strokeStart:1.5, end:3});*/
 					if(place=="secretaria")
 						place="550";
 					if(place=="auditorium")
@@ -497,7 +335,7 @@ var CORE = {
 						place = "cafeteria";
 	
 					var path = "https://webglstudio.org/projects/virtualclerk/imgs/mapa-"+ place + ".jpg";
-					var LSQ = CORE.iframe.contentWindow.LSQ;
+					var LSQ = window.LSQ;
 					LS.RM.load(path);
 					var map = LSQ.get("map");
 					var woman = LSQ.get("background");
@@ -569,21 +407,6 @@ var CORE = {
 			return;
 		}
 	},
-	/*processCommand: function( command ) //starting with '/'
-	{
-		//TODO
-	},*/
-
-	showMessage: function(msg, className)
-	{
-		var div = document.createElement("div");
-		div.innerHTML = msg;
-		div.className = "msg " + (className||"");
-		this.log_container.appendChild(div);
-		this.log_container.scrollTop = 100000;
-		return div;
-
-	},
 	displayModal: function (showModal, msg) {
 
 		var modal = document.getElementById("reconnecting");
@@ -599,30 +422,11 @@ var CORE = {
 
 
 	},
-	onKeyDown: function(event){
-		if(event!=undefined && event.key.toUpperCase() == "D"){
-			var console = document.querySelector(".console");
-			if(console.style.display === "none")
-			{
-				console.style.display = "block";
-				this.mode = modes.REALASE;
-			}
-			else{
-				console.style.display = "none";
-				this.mode = modes.DEBUG;
-			}
-		}
-	}
+	
 };
 var first_char = /\S/;
 function capitalize(s) {
   return s.replace(first_char, function(m) { return m.toUpperCase(); });
-}
-
-//easier
-function log( msg, className )
-{
-	return CORE.showMessage( msg, className );
 }
 
 function eventFire(el, etype){
@@ -634,120 +438,4 @@ function eventFire(el, etype){
 	  el.dispatchEvent(evObj);
 	}
   }
-  /* IPAD VIEW CODE */
- /* function changeWaitingView()
-{
-    var div = finder.document.getElementById("waiting-container");
-	if(div.style.visibility == "hidden")
-	{
-		div.style.visibility = "visible";
-	}
-	else
-		div.style.visibility = "hidden";
-}
-function setEvents()
-{
-	if(!finder)
-		return;
-
-	finder.document.getElementById("person-toggle").addEventListener("click", function() {
-        var active_filters = document.getElementsByClassName('active');
-
-
-        if(this.classList.contains("active"))
-        {
-            updateListDB()
-            return;
-        }
-        else
-        {
-            var actives = finder.document.getElementsByClassName("active");
-            for(var i = 0; i< actives.length; i++)
-            {
-                actives[i].classList.remove("active");
-            }
-            this.classList.add("active");
-            BUILDING_TYPE = false
-            PERSON_TYPE = true
-            GROUP_TYPE = false
-        }
-        updateListDB()
-
-
-    });
-    finder.document.getElementById("group-toggle").addEventListener("click", function() {
-        var active_filters = finder.document.getElementsByClassName('active');
-
-
-        if(this.classList.contains("active"))
-        {
-            updateListDB()
-            return;
-        }
-        else
-        {
-            var actives = finder.document.getElementsByClassName("active");
-            for(var i = 0; i< actives.length; i++)
-                actives[i].classList.remove("active");
-
-            this.classList.add("active");
-            BUILDING_TYPE = false
-            PERSON_TYPE = false
-            GROUP_TYPE = true
-        }
-
-        updateListDB()
-
-    });
-    finder.document.getElementById("building-toggle").addEventListener("click", function() {
-        var active_filters = finder.document.getElementsByClassName('active');
-
-        if(this.classList.contains("active"))
-        {
-            updateListDB()
-            return;
-
-        }
-        else
-        {
-
-            var actives = finder.document.getElementsByClassName("active");
-            for(var i = 0; i< actives.length; i++)
-            {
-                actives[i].classList.remove("active");
-            }
-            this.classList.add("active");
-            BUILDING_TYPE = true
-            PERSON_TYPE = false
-            GROUP_TYPE = false
-        }
-        updateListDB()
-
-    });
-    finder.document.getElementById("send-btn").addEventListener("click", function() {
-        var input = finder.document.getElementById("myInput").value;
-        if(!input)
-            alert('You have to write and select something')
-        else
-        {
-            CORE.mindRemote.requestAnswer( input );
-			//alert('Implement sendInfo() method, and send: ' + input)
-
-        }
-    });
-    // Just for the moment, to toggle the waiting screen
-    finder.document.addEventListener("keypress", function(e){
-        if(e.code == "Digit1")
-        {
-            var div = finder.document.getElementById("waiting-container");
-            if(div.style.visibility == "hidden")
-            {
-                div.style.visibility = "visible";
-            }
-            else
-                div.style.visibility = "hidden";
-        }
-
-    });
-}
-*/
+  

@@ -2,7 +2,7 @@ function init_websocket () {
   // if user is running mozilla then use it's built-in WebSocket
   window.WebSocket = window.WebSocket || window.MozWebSocket;
   var muted = false;
-  var connection = new WebSocket('wss://webglstudio.org/port/9004/ws/');
+  var connection = new WebSocket('wss:dtic-recepcionist.upf.edu/port/3001/ws/');
   if(connection.readyState == WebSocket.CONNECTING)
   {
     // var container = document.getElementById("err-container");

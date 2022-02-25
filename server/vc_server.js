@@ -7,14 +7,29 @@ var PATH_TO_PHRASES = "data_phrases.csv";
 var WebSocket = require('ws');
 var http = require('http');
 
+/*var WebSocketServer = require('ws').Server;
+var http = require('http');*/
+// Include fs module
+const fs = require('fs');
 var server = http.createServer();
 
-server.listen(9004, function() {
+server.listen(3001, function() {
       console.log("Server ready!");
 
 });
 
-var wss = new WebSocket.Server({ server: server }); /*new WebSocketServer({
+var wss = new WebSocket.Server({ server: server });
+/*var server = http.createServer({ key: process.env.KEY, cert: process.env.CERT }); 
+server.listen(3001, function() {
+  console.log("Server ready!");
+
+});*/
+
+/*const wss = new WebSocketServer(
+  
+  { server: server }
+);*/
+/*new WebSocketServer({
   httpServer: server,
   autoAcceptConnections: false
 });*/
@@ -131,13 +146,14 @@ wss.on('connection', function connection(ws) {
         
         console.log('received: %s', message);
         var object_message = null;
-        try{
+        /*try{
           object_message = JSON.parse(message);
-        }catch{
+        }
+        catch{
           //Not a JSON, return a warn
           sendInfo(ws, "Warn: the message is not a JSON, ignoring it.");
           return;
-        }
+        }*/
   
        
         var object_message = JSON.parse(message);
@@ -357,7 +373,6 @@ function sendData(ws, msg)
   }
 }
 /*--------------------------------------- GOOGLE DRIVE API ---------------------------------------*/
-const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
 let privatekey = require("./virtual-assistant-privat-key.json");
