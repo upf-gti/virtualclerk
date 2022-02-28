@@ -8,6 +8,7 @@ import numpy as np
 import spacy
 
 import requests
+import pdb
 
 from agent_database import load_people, load_groups, load_places, get_googledrive_service
 from communication import encode, decode
@@ -82,24 +83,21 @@ async def handle_not_understood(request, websocket):
                " Are you looking for a person, a group or a place?")
     #getAudioPhrase
     #2 phrases
-
-    r = requests.get(api_path+'/phrases/phrase', params={'text': message})
+    audios = []
+    r = requests.get(api_path+'phrases/phrase', params={'text':message})
     print(r.json())
-    if len(r.json()):
-        data = r.json()[0]
-    else: 
-        data = None
-
+    if r.status_code == 200 and len(r.json()):
+        audios.append(r.json()[0])
+ 
     request['type'] = 'request'
-    request['content'] = {'text': message, 'data': data}#message
+    request['content'] = {'text': message, 'data': audios}#message
     request_communication = json.dumps(request)
-
     await websocket.send(request_communication)
     response_communication = await websocket.recv()
 
     response = json.loads(response_communication)
-    #content = response['content']
-    content = {'text': response['content']}
+    print(response)
+    content = response['content']
 
     return content
 
@@ -108,8 +106,9 @@ async def handle_group(data_groups, websocket, nlp):
 
     message = "Could you give me please the name of the group?"
     #getAudioPhrase
+  
     r = requests.get(api_path+'phrases/phrase', params={'text': message})
-    if r.json()[0]:
+    if r.status_code == 200 and len(r.json()):
         data = r.json()[0]
     else: 
         data = None
@@ -123,7 +122,7 @@ async def handle_group(data_groups, websocket, nlp):
     await websocket.send(request_json)
     response_json = await websocket.recv()
     content = decode(response_json)
-
+    print(content)
     chunk = extract_longest_chunk(content, nlp)
 
     similarity_vector = []
@@ -142,8 +141,33 @@ async def handle_group(data_groups, websocket, nlp):
         data_groups[group_idx, 2].capitalize(),
         # data_groups[group_idx, 3].capitalize(), # new csv format doesn't required this field (name&surname in the same cell)
         office)
+    
+    audios = []
+    #audio phrase
+    r = requests.get(api_path+'phrases/phrase', params={'text':"You can find the leader of the"})
+    if len(r.json()):
+        audios.append(r.json()[0])
+    #audio group
+    r = requests.get(api_path+'groups/group', params={'name':data_groups[group_idx, 0]})
+    if len(r.json()):
+        audios.append(r.json()[0])
+    #audio person
+    r = requests.get(api_path+'people/person', params={'name':data_groups[group_idx, 2]})
+    if len(r.json()):
+        audios.append(r.json()[0])
+    
+    #audio phrase
+    r = requests.get(api_path+'phrases/phrase', params={'text':"in the office"})
+    if len(r.json()):
+        audios.append(r.json()[0])
 
-    return message
+    #audio office
+    r = requests.get(api_path+'offices/id/' + office)
+    if len(r.json()):
+        audios.append(r.json()[0])
+
+    data = {'text': message, 'audios': audios}
+    return data
 
 
 async def handle_person(data_people, nlp, websocket):
@@ -151,7 +175,18 @@ async def handle_person(data_people, nlp, websocket):
     # Cutoff name --> When computing the similarity of
     # the surname, we will do it for the n first
     message = "Could you please type the name and surname on the tablet?"
-    request_json = encode(message, 'request')
+    #request_json = encode(message, 'request')
+    r = requests.get(api_path+'phrases/phrase', params={'text': message})
+    if r.status_code == 200 and len(r.json()):
+        data = r.json()[0]
+    else: 
+        data = None
+    request = dict()
+    request['type'] = 'request'
+    request['content'] = {'text': message, 'data': data}
+    print(message)
+    request_json = json.dumps(request)
+
     await websocket.send(request_json)
     response_json = await websocket.recv()
     content = decode(response_json)
@@ -209,8 +244,8 @@ async def handle_person(data_people, nlp, websocket):
     name = data_people[idx, 0].capitalize()
     surname = data_people[idx, 1].capitalize()
     
-    r = requests.get(api_path+'/people/person', params={'name': name + ' ' + surname})
-    if r.json()[0]:
+    r = requests.get(api_path+'people/person', params={'name': name + ' ' + surname})
+    if r.status_code == 200 and len(r.json()):
         data = r.json()[0]
     else: 
         data = None
@@ -218,7 +253,7 @@ async def handle_person(data_people, nlp, websocket):
     
     office = data_people[idx, 2]
 
-    r = requests.get(api_path+'/office/id/'+office)
+    r = requests.get(api_path+'office/id/'+office)
     if r.json()[0]:
         data = r.json()[0]
     else: 
@@ -234,14 +269,25 @@ async def handle_person(data_people, nlp, websocket):
 async def handle_place(data_places, floors, nlp, websocket):
 
     message = "Where do you want to go?"
-    request_json = encode(message, 'request')
+    r = requests.get(api_path+'phrases/phrase', params={'text': message})
+    if r.status_code == 200 and len(r.json()):
+        data = r.json()[0]
+    else: 
+        data = None
+    request = dict()
+    request['type'] = 'request'
+    request['content'] = {'text': message, 'data': data}
+    print(message)
+    request_json = json.dumps(request)
+    #request_json = encode(message, 'request')
     await websocket.send(request_json)
     response_json = await websocket.recv()
     content = decode(response_json)
 
     message = None
     while not message and "cancel" not in content.lower():
-
+        audios = []
+        
         replaced_content = content
         for key, value in number_map.items():
             replaced_content = replaced_content.replace(key, value)
@@ -268,40 +314,79 @@ async def handle_place(data_places, floors, nlp, websocket):
 
         else:
             target_token = extract_target(content, nlp)
-            target = str(target_token)
+            target = str(target_token).lower()
+            print("TARGET: " + target)
             if target == "library":
                 message = ("Use the elevator or the stairs to go to the minus 2 floor."
                            " Then follow the corridor and go upstairs."
                            " Once in Gutenberg just go to the building in front of the terrace.")
                 #getAudioPhrase
+                r = requests.get(api_path+'phrases/phrase', params={'text': message})
+                if r.status_code == 200 and len(r.json()):
+                    audios.append(r.json()[0])
+
+                print(message)
+                
             elif target == 'auditorium':
                 message = ("The auditorium is located in the minus 2 floor."
                            " Get the elevator or the stairs and follow the corridor."
                            " It will be at the end on the right.")
                 #getAudioPhrase
+                r = requests.get(api_path+'phrases/phrase', params={'text': message})
+                if r.status_code == 200 and len(r.json()):
+                    audios.append(r.json()[0])
             elif target in ['café', 'cafeteria', 'restaurant', 'bar', 'cantina']:
                 message = (f"The {target} is located in the minus 2 floor."
                            " Get the elevator or the stairs and follow the corridor."
                            " It will be at the end on the left.")
                 #getAudioPhrase
+                r = requests.get(api_path+'phrases/phrase', params={'text': message})
+                if r.status_code == 200 and len(r.json()):
+                    audios.append(r.json()[0])
+                else:
+                    r = requests.get(api_path+'places/place', params={'name': target})
+                    if r.status_code == 200 and len(r.json()):
+                        audios.append(r.json()[0])
+                    r = requests.get(api_path+'phrases/phrase', params={'text': "is located in the minus 2 floor."
+                           " Get the elevator or the stairs and follow the corridor."
+                           " It will be at the end on the left."})
+                    if r.status_code == 200 and len(r.json()):
+                        audios.append(r.json()[0])
+
             elif target in ['secretaria', 'secretary', 'administration', 'admin']:
                 message = ("Secretaria is located on this floor."
                            " You just need to go to the corridor next to the stairs and you will find it.")
                 #getAudioPhrase
+                r = requests.get(api_path+'phrases/phrase', params={'text': message})
+                if r.status_code == 200 and len(r.json()):
+                    audios.append(r.json()[0])
             elif target == 'gutenberg':
                 message = ("Use the elevator or the stairs to go to the minus 2 floor."
                            " Then follow the corridor and go upstairs.")
                 #getAudioPhrase
+                r = requests.get(api_path+'phrases/phrase', params={'text': message})
+                if r.status_code == 200 and len(r.json()):
+                    audios.append(r.json()[0])
             else:
                 message = 'I may not know this place. Could you rephrase it? Say cancel to go back.'
                 #getAudioPhrase
-                request_json = encode(message, 'request')
+                r = requests.get(api_path+'phrases/phrase', params={'text': message})
+                if r.status_code == 200 and len(r.json()):
+                    audios = r.json()[0]
+                #request_json = encode(message, 'request')
+                print(message)
+                request = dict()
+                request['type'] = 'request'
+                request['content'] = {'text': message, 'data': audios}
+                request_json = json.dumps(request)
                 await websocket.send(request_json)
                 response_json = await websocket.recv()
                 content = decode(response_json)
                 message = None
 
-    return message
+    data = {'text': message, 'audios': audios}
+    return data
+    #return message
 
 
 async def agent(websocket, path):
@@ -340,7 +425,7 @@ async def agent(websocket, path):
             request['type'] = 'request'
             payload = {'text': presentation}
             r = requests.get(api_path+'phrases/phrase', params=payload)
-            if r.json()[0]:
+            if r.status_code==200 and len(r.json()):
                 data = r.json()[0]
             else: 
                 data = None
@@ -356,46 +441,46 @@ async def agent(websocket, path):
 
             content = response['content']
             print("CONTENT: ", content)
-
             conversation = True
             while conversation:
                 audios = []
                 target_token = extract_target(content, nlp)
                 target = str(target_token).lower()
-
+                print(target)
                 if target in person_keywords:
                     #data_people = getPeopleNames()
                     res = await handle_person(data_people, nlp, websocket)
 
                 elif target in group_keywords:
                     #data_groups = getGroupNames()
-                    message = await handle_group(data_groups, websocket, nlp)
+                    res = await handle_group(data_groups, websocket, nlp)
 
                 elif target in place_keywords:
                     #data_places = getGroupNames()
-                    message = await handle_place(data_places, floors, nlp, websocket)
+                    res = await handle_place(data_places, floors, nlp, websocket)
 
                 else:
-                    res = await handle_not_understood(request, websocket)
+                    content = await handle_not_understood(request, websocket)
                     continue
                 if res:
-                    message = res.text
+                    message = res['text']
                 message = "{} Do you need something else?".format(message)
                 #getAudioPhrase
                 payload = {'text': 'Do you need something else?'}
                 r = requests.get(api_path+'phrases/phrase', params=payload)
                 #print(r.json())
-                if r.json()[0]:
+                if r.status_code ==200 and len(r.json()):
                     data = r.json()[0]
                 else: 
                     data = None
                 if res:
-                    audios = res.audios
-                audios.push(data)
-
+                    audios = res['audios']
+                audios.append(data)
+                request['type'] = 'request'
                 request['content'] = {'text': message, 'data': audios}
                 #request_json = encode(message, 'request')
-                request_json = encode(request, 'request')
+                #request_json = encode(request, 'request')
+                request_json = json.dumps(request)
                 await websocket.send(request_json)
                 response_json = await websocket.recv()
                 content = decode(response_json)
@@ -413,7 +498,8 @@ async def agent(websocket, path):
                         data = None
                     request['content'] = {'text': message, 'data': data}
                    ## request_json = encode(message, 'request')
-                    request_json = encode(request, 'request')
+                    #request_json = encode(request, 'request')
+                    request_json = json.dumps(request)
                     await websocket.send(request_json)
                     request_json = encode('', 'end')
                     await websocket.send(request_json)
@@ -430,8 +516,9 @@ async def agent(websocket, path):
             else: 
                 data = None
             request['content'] = {'text': agent, 'data': data}
-            request_json = encode(request,'request')
+            #request_json = encode(request,'request')
             #request_json = encode(agent,'request')
+            request_json = json.dumps(request)
             await websocket.send(request_json)
             request_json = encode('','end')
             await websocket.send(request_json)
