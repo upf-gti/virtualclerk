@@ -270,7 +270,7 @@ var CORE = {
 				return;
 			var LS = window.LS;
 			state = LS.Globals.SPEAKING;
-			
+			isSpeaking = true
 			if(msg.content.text.includes("name and surname"))
 			{
 				
@@ -278,9 +278,20 @@ var CORE = {
 				
 				if(start_recognition) recognition_enabled = false;
 			}
-			var object = {};
+			var obj = {type: "behaviours", data : []};
 			if(msg.content && msg.content.data)
-				obj = { type: "behaviours", data: [ { type:"lg", text: msg.content.text, audio: msg.content.data.audio, start:0.1, end:4 }]}; //speaking
+				if(msg.content.data.constructor == Array){
+					var t = 0;
+					var dur = 2;
+					for(var i = 0; i< msg.content.data.length; i++){
+						var audio = msg.content.data[i];
+						var d = {type:"lg", text: audio.audio_name, audio: audio.audio, start:t+0.1, end:t+dur}
+						obj.data.push(d);
+						t+=dur;
+					}
+				}
+				else
+				obj.data= [ { type:"lg", text: msg.content.text, audio: msg.content.data.audio, start:0.1, end:4 }]; //speaking
 			else
 				obj = { type: "behaviours", data: [ { type:"lg", text: msg.content.text,  start:0.1, end:4 }]};
 			if(msg.content.text.includes("Hi"))

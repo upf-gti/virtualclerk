@@ -88,8 +88,11 @@ this.onUpdate = function(dt)
     LS.Globals.BehaviorManager.newBlock(newBlock, LS.GlobalScene.time);  
   }
     
-  if(LS.Globals.lipsyncModule)
+  if(LS.Globals.lipsyncModule){
+    
     LS.Globals.lipsyncModule.update();
+    LS.Globals.speaking = LS.Globals.lipsyncModule.working;
+  }
 }
 
 
@@ -259,7 +262,7 @@ LS.Globals.processMsg = function(data, fromWS) {
   {
 
     //LS.Globals.BehaviorPlanner.newBlock(msg);
-    if(msg.speech)
+    if(msg.speech || msg.lg)
       LS.Globals.BehaviorPlanner.transition({control:LS.Globals.SPEAKING})
       //LS.Globals.processMsg(JSON.stringify({control:LS.Globals.SPEAKING}));
       }
