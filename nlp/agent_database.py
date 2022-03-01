@@ -7,7 +7,7 @@ from google.oauth2.credentials import Credentials
 from google.oauth2 import service_account
 import csv
 import numpy as np
-
+import requests
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/drive',
 'https://www.googleapis.com/auth/drive.file',
@@ -53,8 +53,8 @@ def get_googledrive_service():
 
     service = build('drive', 'v2', credentials=creds)
     return service
-
-def load_people(service, fileId,name):
+import pdb
+def load_people(service, fileId,name, api_path):
     """
     Function to load info about the researchers.
 
@@ -73,37 +73,50 @@ def load_people(service, fileId,name):
                                 researchers
     """
     data_researchers = []
-    if service:
-        with open(name, "wb") as csvfile:
-            text = service.files().get_media(fileId=fileId).execute() 
-            csvfile.write(text)
-    
-    with open(name, "r", encoding='unicode_escape') as csvfile:
-        reader = csv.reader(csvfile, delimiter=';')
-        for row in reader:
-            if len(row) == 0:
-                continue
-            data_researchers.append(np.asarray(row))
-    data_researchers = np.asarray(data_researchers)
-    
-    for i in range(data_researchers.shape[0]):
-        people = data_researchers[i, :]
 
-        full_name = people[0]
-        split_name = full_name.split(", ")
-        if len(split_name) == 1:
-            split_name = full_name.split(",")
-        if len(split_name) == 1:
-            continue
-        name = split_name[0]
-        surname = split_name[1]
-        office = people[1]
-        building = people[2]
-        data_researchers[i, 0] = name
-        data_researchers[i, 1] = surname
-        data_researchers[i, 2] = office
-        data_researchers[i, 3] = building
-    return data_researchers
+    r = requests.get(api_path+'people/names')
+    if r.status_code == 200:
+        #data_researchers = r.json()
+        for person in r.json():
+            complete_name = person['name'].lower()
+            surname = complete_name.split()
+            name = surname.pop(0)
+            surname = " ".join(surname)
+            data_researchers.append([name, surname, person['office'], person['building']])
+        data_researchers = np.asarray(data_researchers)
+        return data_researchers
+    else:
+        if service:
+            with open(name, "wb") as csvfile:
+                text = service.files().get_media(fileId=fileId).execute() 
+                csvfile.write(text)
+        
+        with open(name, "r", encoding='unicode_escape') as csvfile:
+            reader = csv.reader(csvfile, delimiter=';')
+            for row in reader:
+                if len(row) == 0:
+                    continue
+                data_researchers.append(np.asarray(row))
+        data_researchers = np.asarray(data_researchers)
+
+        for i in range(data_researchers.shape[0]):
+            people = data_researchers[i, :]
+
+            full_name = people[0]
+            split_name = full_name.split(", ")
+            if len(split_name) == 1:
+                split_name = full_name.split(",")
+            if len(split_name) == 1:
+                continue
+            name = split_name[0]
+            surname = split_name[1]
+            office = people[1]
+            building = people[2]
+            data_researchers[i, 0] = name
+            data_researchers[i, 1] = surname
+            data_researchers[i, 2] = office
+            data_researchers[i, 3] = building
+        return data_researchers
 
 
 def load_groups(service,fileId,name):
