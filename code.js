@@ -11,8 +11,8 @@ var start_recognition = false;
 var state = 2; //WAITING
 var counter = 0;
 
+var mute = true;
 var recognition_enabled = false;
-
 var url = "dtic-recepcionist.upf.edu/port/8765/ws/" //"ws://dtic-recepcionist-kbnli.s.upf.edu:8765"//webglstudio.org/port/9001/ws/"//"dtic-recepcionist-kbnli.s.upf.edu:8765";
 var tabUrl = "dtic-recepcionist.upf.edu/port/3001/ws/"
 //var tabUrl = "dtic-recepcionist.upf.edu:3001"
@@ -182,6 +182,7 @@ var CORE = {
 				this.mindRemote.sendMessage( {type:"start", content:""} );
 				this.isFirstMsg = false;
 				recognition_enabled = true;
+				mute = false;
 				//if(start_recognition) recognition.stop()
 				window.requestAnimationFrame(this.appLoop.bind(this));
 				return;
@@ -198,7 +199,7 @@ var CORE = {
 					LS.Globals.processMsg(JSON.stringify({control: state}), true);
 					
 				}
-				else if(!isSpeaking&&!start_recognition&&recognition_enabled)
+				else if(!isSpeaking&&!start_recognition&&!mute && recognition_enabled)
 				{
 					recognition.start();
 					if(state==LS.Globals.SPEAKING)
@@ -234,6 +235,7 @@ var CORE = {
 	{
 		console.log(error)
 		this.isFirstMsg = true;
+		this.start = false;
 		this.displayModal(true, "Connection error. Trying to reconnect.");
 		var that = this;
 		
@@ -270,25 +272,29 @@ var CORE = {
 				return;
 			var LS = window.LS;
 			state = LS.Globals.SPEAKING;
-			isSpeaking = true
+			//isSpeaking = true
 			if(msg.content.text.includes("name and surname"))
 			{
 				
 				this.tabRemote.sendMessage({type:"request_data", data: "person"});
 				
-				if(start_recognition) recognition_enabled = false;
+				if(start_recognition){ recognition.stop()}
+				recognition_enabled = false;
 			}
 			var obj = {type: "behaviours", data : []};
 			if(msg.content && msg.content.data)
 				if(msg.content.data.constructor == Array){
 					var t = 0;
-					var dur = 2;
+					
 					for(var i = 0; i< msg.content.data.length; i++){
 						var audio = msg.content.data[i];
-						var d = {type:"lg", text: audio.audio_name, audio: audio.audio, start:t+0.1, end:t+dur}
+						var duration = audio.duration;
+					
+						var d = {type:"lg", text: audio.audio_name, audio: audio.audio, start:t, end:t+duration};
 						obj.data.push(d);
-						t+=dur;
+						t+=duration+0.1;
 					}
+
 				}
 				else
 				obj.data= [ { type:"lg", text: msg.content.text, audio: msg.content.data.audio, start:0.1, end:4 }]; //speaking
@@ -312,10 +318,11 @@ var CORE = {
 		
 			}
 	
-			if(msg.content == "See you next time, bye.")
+			if(msg.content.text == "See you next time, bye.")
 			{
 				this.isFirstMsg = true;
 				this.start = false;
+				recognition_enabled = false
 				if(start_recognition) recognition.stop();
 				this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
 			}
@@ -401,7 +408,7 @@ var CORE = {
 					if(json.action == "mute")
 					{
 						//disable recognition in the app so it does not try to listen as the tablet is muted
-						recognition_enabled = !recognition_enabled;
+						mute = !mute;
 						recognition.stop()
 						// Sennd ACK message to tablet to change styles, views...
 						if(this.tabRemote)

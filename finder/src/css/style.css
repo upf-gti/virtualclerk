@@ -1,3 +1,15 @@
+@font-face { 
+  font-family: Decima; 
+  src: url('https://webglstudio.org/users/dmoreno/projects/virtualclerk/finder/assets/Decima_Mono_W01_Regular.ttf'); 
+} 
+@font-face { 
+  font-family: Decima; 
+  font-weight: bold; 
+  src: url('https://webglstudio.org/users/dmoreno/projects/virtualclerk/finder/assets/Decima_Mono_W01_Bold.ttf');
+}
+* {
+  font-family: Decima;
+}
 .bgimg {
   background-position: center;
   background-size: cover;
@@ -39,7 +51,7 @@
     margin: 20px 1.15%;
     height: auto;
     color: white;
-    background-color: #A7192B;    /* Medium blue */
+    background-color: #E8308A;    /* Medium blue */
     padding-bottom: 10px;
     padding-top: 10px;
     padding-left: 10px;
@@ -78,10 +90,11 @@
 }
 .w3-red{
 	color: #FFF!important;
-	background-color: rgb(167 25 43)!important;
+	background-color: rgb(232, 48, 138)!important;
 }
 .w3-red-color{
-  color: rgb(167 25 43)!important;
+  color: rgb(232, 48, 138)!important;
+  font-size: 35vh!important;
 }
 .w3-gray{
 	color: #FFF!important;
@@ -89,12 +102,13 @@
 }
 .w3-gray-color{
   color: #ccc!important;
+  font-size: 35vh!important;
 }
 
 .w3-big-button{
   width: auto;
   height: auto;
-  margin-left: calc(50% - 171.43px);/*calc(50% - 200px);*/
+  /* margin-left: calc(50% - 171.43px);calc(50% - 200px); */
   position: relative;
   z-index: 1000;
   top:-60px;
@@ -191,19 +205,19 @@ input:focus {
 .absolut{
   position: absolute;
 }
-#waiting-container
-{
-  /* border:solid red 2px; */
-  width:95%;
-  position:absolute;
-  background-color:white;
-  z-index:1000;
+#waiting-container {
+  /* border: solid red 2px; */
+  width: 95%;
+  position: absolute;
+  background-color: white;
+  z-index: 1000;
   margin: 0 auto;
   text-align: center;
   vertical-align: middle;
-  line-height: 400px;
-  font-size: 4vh;
-  font-family: "Segoe UI",Arial,sans-serif;
+  line-height: 170px;
+  font-size: 5vh;
+  padding: 10vh;
+  /* font-family: "Decima Mono",sans-serif; */
   visibility: "visible";
 }
 
@@ -265,9 +279,10 @@ input:focus {
   cursor: pointer;
 }
 
-#mute-container{
-  right: 0px;
+#mute-container {
   position: absolute;
+  left: -50px;
+  top: -50px;
   width: 100px;
   /* border: solid red 2px; */
   height: 100px;
@@ -276,38 +291,44 @@ input:focus {
 
 
 .mute-button{
-  font-size: 75px;
+  font-size: 6vw;
   visibility: visible;
   color: grey;
   animation: mymove2 0.5s
 }
 
 .mute-button.active{
-  font-size: 75px;
+  font-size: 6vw;
   visibility: visible;
-  color: #A7192B;
+  color: #E8308A;
   animation: mymove1 0.5s
 }
 
 @keyframes mymove1 {
   from {color: grey;}
-  to {color: #A7192B;}
+  to {color: #E8308A;}
 }
 
 @keyframes mymove2 {
-  from {color: #A7192B;}
+  from {color: #E8308A;}
   to {color: grey;}
 }
 
+.w3-red-color {
+  color: rgb(232,48,138)!important;
+  font-size: 35vh!important;
+}
+
 .fa.fa-microphone.w3-red-color.absolut{
-  font-size:400px;
   visibility: hidden;
   margin-left: 50px;
-  color: #A7192B !important;
+  color: #E8308A !important;
+  font-size: 35vh!important;
+
 }
 
 .fa.fa-microphone.w3-red-color.absolut.muted{
-  font-size:400px;
+  font-size: 35vh!important;
   visibility: hidden;
   margin-left: 50px;
   color: grey !important;
@@ -316,7 +337,7 @@ input:focus {
 .fa.fa-microphone.w3-red-color.absolut.anim{
 	animation-name: pulse;
 	animation-duration: 1.5s;
-  color: #A7192B !important;
+  color: #E8308A !important;
 	animation-iteration-count: infinite;
 	animation-timing-function: ease-in-out;
 }
@@ -377,7 +398,7 @@ input:focus {
 }
 
 #accept-terms{
-  background-color: #A7192B ;
+  background-color: #E8308A ;
   color: white;
   border: none;
   border-radius: 2px;
@@ -389,4 +410,14 @@ input:focus {
   border: none;
   border-radius: 2px;
   padding: 5px;
+}
+
+
+.w3-big-button {
+  width: auto;
+  height: auto;
+  margin-left: calc(50% - 148.43px);
+  position: absolute;
+  z-index: 1000;
+  top: 50%;
 }

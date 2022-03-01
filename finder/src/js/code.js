@@ -79,15 +79,23 @@ function loadData (data_type, data)
     switch(data_type){
         /*PEOPLE DATA*/
         case "people":
-            for(var i=0; i<data.length; i++)
-            {
-                var data_arr = data[i].split(", ");
-                for(var j=0; j<data_arr.length; j++)
-                    data_arr[j] = capitalizeFirstLetter(data_arr[j].toLowerCase());
-                var person = data_arr.join(" ");
-                person_names_list.push(person);
-            }
-            updateListDB();
+            getHTMLRequest("people", {"key": "names"}, "", function(data){
+                /* for(var i=0; i<data.length; i++)
+                {
+                    var data_arr = data[i].split(", ");
+                    for(var j=0; j<data_arr.length; j++)
+                        data_arr[j] = capitalizeFirstLetter(data_arr[j].toLowerCase());
+                    var person = data_arr.join(" ");
+                    person_names_list.push(person);
+                } */
+                data = JSON.parse(data);
+                for(var i=0; i<data.length; i++)
+                {
+                    person_names_list.push(data[i].name);
+                }
+                updateListDB();
+            }, function(err){console.log(err)}, true)
+            
             break;
         /*GROUPS DATA*/
         case "groups":
@@ -539,3 +547,47 @@ function CSVToArray( strData, strDelimiter ){
     return arrData[0].map(function (_, c) { return arrData.map(function (r) { return r[c]; }); });
 //    return( arrData );
   }
+
+let baseURL = "https://dtic-recepcionist.upf.edu/api";
+let xmlHttp = new XMLHttpRequest();
+let finalURL, mapIter;
+
+/*
+* The get request logic, it works using the baseURL and adding extra parameters
+* @method getHTMLRequest
+* @params {extraURL} the page to be created 
+* @params {keys} the params for the URl, is a json object that contains the keys and values
+* @params {body} the body of the request (if needed)
+* @params {callback} function to see what to do with the request response
+* @params {onlyValue} if no key is nedded and just the value is true 
+*/
+function getHTMLRequest(extraURL, keys, body, callback, callbackError = function(){}, onlyValue = false) {
+  
+  xmlHttp.onreadystatechange = function() {
+    if (xmlHttp.readyState == XMLHttpRequest.DONE)
+      if(xmlHttp.status == 200)
+        callback(xmlHttp.responseText);
+      else if (xmlHttp.status == 404 || xmlHttp.status == 401)
+        callbackError()
+  }
+
+  xmlHttp.onerror = function(e) {
+   
+  };
+
+  //Set the final url
+  finalURL = baseURL+"/"+extraURL;
+
+  //Set the keys of the url
+  if(keys != undefined) {
+    if(!onlyValue)
+      Object.entries(keys).map(([k,v]) => finalURL+="/"+k+"/"+v);
+    else
+      Object.entries(keys).map(([k,v]) => finalURL+="/"+v);
+  }
+
+  console.log(finalURL);
+
+  xmlHttp.open("GET", finalURL, true);
+  xmlHttp.send((body || null));
+}
