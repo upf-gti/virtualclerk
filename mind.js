@@ -35,7 +35,7 @@ MindRemote.prototype.requestAnswer = function( question )
 		type: "request",
 		content: question
 	};
-	this.sendMessage(msg);
+	 return this.sendMessage(msg);
 }
 
 MindRemote.prototype.sendMessage = function( message )

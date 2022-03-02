@@ -44,7 +44,7 @@ def extract_target(content, nlp):
             nsubj = token
         elif token.dep_ == "ROOT":
             root = token
-    print("Token: "+token.dep_)
+
     if dobj:
         target = dobj
     elif root.pos_ == 'NOUN':
@@ -98,7 +98,7 @@ async def handle_not_understood(request, websocket):
     print(response)
     content = response['content']
 
-    return content
+    return response
 
 
 async def handle_group(data_groups, websocket, nlp):
@@ -189,7 +189,6 @@ async def handle_person(data_people, nlp, websocket):
     await websocket.send(request_json)
     response_json = await websocket.recv()
     content = decode(response_json)
-
     chunk = extract_longest_chunk(content, nlp)
     if chunk:
         extracted = str(chunk)
@@ -210,7 +209,7 @@ async def handle_person(data_people, nlp, websocket):
         name = data_people[idx, 0].lower()
         surname = data_people[idx, 1].lower()
         complete_name = name + " " + surname
-
+        
         if compare_complete:
             score = SequenceMatcher(None, extracted, complete_name).quick_ratio()
 
@@ -495,12 +494,20 @@ async def agent(websocket, path):
             response_communication = await websocket.recv()
             print("RESPONSE: ", response_communication)
             response = json.loads(response_communication)
-
+            if response['type'] == 'end':
+                conversation = False
+                request_json = encode('','end')
+                continue
             content = response['content']
             print("CONTENT: ", content)
             conversation = True
             while conversation:
                 audios = []
+                if response['type'] == 'end':
+                    conversation = False
+                    request_json = encode('','end')
+                    continue
+                content = response['content']
                 target_token = extract_target(content, nlp)
                 target = str(target_token).lower()
                 print(target)
@@ -517,7 +524,7 @@ async def agent(websocket, path):
                     res = await handle_place(data_places, floors, nlp, websocket)
 
                 else:
-                    content = await handle_not_understood(request, websocket)
+                    response = await handle_not_understood(request, websocket)
                     continue
                 if res:
                     message = res['text']
@@ -530,7 +537,6 @@ async def agent(websocket, path):
                     data = r.json()[0]
                 else: 
                     data = None
-                pdb.set_trace()
                 if res and res['audios']:
                     audios = res['audios']
                 audios.append(data)
@@ -541,7 +547,9 @@ async def agent(websocket, path):
                 request_json = json.dumps(request)
                 await websocket.send(request_json)
                 response_json = await websocket.recv()
-                content = decode(response_json)
+                #content = decode(response_json)
+                response = json.loads(response_json)
+                content = response ['content']
 
                 if "No" in content:
                     conversation = False

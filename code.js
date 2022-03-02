@@ -179,7 +179,11 @@ var CORE = {
 		{
 			if(this.isFirstMsg)
 			{
-				this.mindRemote.sendMessage( {type:"start", content:""} );
+				if(!this.mindRemote.sendMessage( {type:"start", content:""} )){
+					this.onConnectionError("nlp");
+					return;
+				}
+					
 				this.isFirstMsg = false;
 				recognition_enabled = true;
 				mute = false;
@@ -260,7 +264,8 @@ var CORE = {
 			mind.sendMessage( {type:"end", content:""} );
 		
 		}
-			mind.requestAnswer( text_message );
+			if(!mind.requestAnswer( text_message ))
+				this.onConnectionError("nlp")
 
 	},
 
@@ -352,7 +357,7 @@ var CORE = {
 					if(place == "bar" || place == "restaurant")	  //hardcoded
 						place = "cafeteria";
 	
-					var path = "https://webglstudio.org/projects/virtualclerk/imgs/mapa-"+ place + ".jpg";
+					var path = "https://dtic-recepcionist.upf.edu/recepcionista/imgs/mapa-"+ place + ".jpg";
 					var LSQ = window.LSQ;
 					LS.RM.load(path);
 					var map = LSQ.get("map");
@@ -394,7 +399,8 @@ var CORE = {
 			{
 				case "response_data":
 					
-					this.mindRemote.requestAnswer( json.data );
+					if(!this.mindRemote.requestAnswer( json.data ))
+						onConnectionError("nlp")
 					recognition_enabled = true;
 					// json.data;
 					break;
@@ -416,6 +422,14 @@ var CORE = {
 							// console.log("Sending mute message");
 							this.tabRemote.sendMessage({type: "app_action", action: "mute_toggled" })
 													}
+					}
+					break;
+				case "info":
+					if(json.data.includes("tablet disconnected")){
+						this.mindRemote.sendMessage( {type:"end", content:""} );
+						this.isFirstMsg = true;
+						this.start = false;
+						if(start_recognition) recognition.stop()
 					}
 					break;
 			}

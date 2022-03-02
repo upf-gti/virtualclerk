@@ -142,7 +142,7 @@ function init_websocket () {
           break;
         case "info":
           if(json.data.includes("connected to session with token"))
-            requestData();
+            loadData('people')//requestData();
           break;
       }
     }

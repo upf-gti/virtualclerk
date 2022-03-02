@@ -97,10 +97,14 @@ Session.prototype.connect = function(tablet_client, type){
 Session.prototype.disconnect = function(client){
   client.session = null;
   if(client == this.vc_client){
+    if(this.tablet_client && this.tablet_client.session)
+      this.tablet_client.session.disconnect(this.tablet_client)
     this.vc_client = null;
     
   }else if (client == this.tablet_client){
     this.tablet_client = null;
+    if(this.vc_client)
+      sendInfo(this.vc_client, "Info: tablet disconnected from session '" + this.token + "'.");
   }
   if(this.tablet_client == null && this.vc_client == null)
     removeSession(this, "Info: session has been terminated because both vc and tablet client have disconnected.");
@@ -289,7 +293,7 @@ wss.on('connection', function connection(ws) {
                         path = PATH_TO_PHRASES;
                         break;
                     }
-                    fs.readFile(path, 'utf8', function (err, data) {
+                   /* fs.readFile(path, 'utf8', function (err, data) {
                       if (err) return console.log('Error reading file:', err);
                       
                       var msg = {
@@ -299,7 +303,7 @@ wss.on('connection', function connection(ws) {
                         time:object_message.time || "no-time"
                       }
                       sendData(ws, msg)
-                    })
+                    })*/
                       return;              
                     break;
                 default:
@@ -373,7 +377,7 @@ function sendData(ws, msg)
   }
 }
 /*--------------------------------------- GOOGLE DRIVE API ---------------------------------------*/
-const readline = require('readline');
+/*const readline = require('readline');
 const {google} = require('googleapis');
 let privatekey = require("./virtual-assistant-privat-key.json");
 // If modifying these scopes, delete token.json.
@@ -402,7 +406,7 @@ jwtClient.authorize(function (err, tokens) {
     loadFiles(jwtClient)
     console.log("Successfully connected!");
   }
- });
+ });*/
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -464,7 +468,7 @@ fs.readFile('credentials.json', (err, content) => {
       callback(oAuth2Client);
     });
   });
-}*/
+}*//*
 var people_file_id = "1R7Psnyfxj9qYtE9Qli6JXR3ehj25NTtj";
 var places_file_id = "1h3itEf8YwZP2pdDa0gZK-9D1N5E0zcyg";
 var groups_file_id = "1ar4j46cg-Ftxix4XZhO-IBepnXkJnMwI";
@@ -474,7 +478,7 @@ var phrases_file_id = "1uKkiW4JbF4AZ2F2msvvajMdvZ1jhAgK_";
 /**
  * Load all the necessary CSVs data from Drive and write that to local CSVs
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
- */
+ *//*
 function loadFiles(auth) 
 {
   getFile(auth,people_file_id, PATH_TO_PEOPLE);
@@ -501,4 +505,4 @@ function getFile(auth, fileId, filePath)
     });
       
     })
-}
+}*/

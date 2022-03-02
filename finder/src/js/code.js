@@ -49,8 +49,18 @@ function initApp ()
     
 }
 function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-  }
+return string.charAt(0).toUpperCase() + string.slice(1);
+}
+function titleCase(str) {
+    var splitStr = str.toLowerCase().split(' ');
+    for (var i = 0; i < splitStr.length; i++) {
+        // You do not need to check if i is larger than splitStr length, as your for does that for you
+        // Assign it back to the array
+        splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);     
+    }
+    // Directly return the joined string
+    return splitStr.join(' '); 
+}  
 function requestData(){
     /*PEOPLE DATA*/
     var msg = {
@@ -91,7 +101,8 @@ function loadData (data_type, data)
                 data = JSON.parse(data);
                 for(var i=0; i<data.length; i++)
                 {
-                    person_names_list.push(data[i].name);
+                    var name = titleCase(data[i].name.toLowerCase())
+                    person_names_list.push(name);
                 }
                 updateListDB();
             }, function(err){console.log(err)}, true)
