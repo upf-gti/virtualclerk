@@ -161,7 +161,10 @@ LS.Globals.processMsg = function(data, fromWS) {
       if(data[i].type == "info")
         continue;
       else if ((data[i].type == "speech" || data[i].type == "lg") && LS.Globals.BehaviorPlanner)
+      {
         LS.Globals.BehaviorPlanner.transition({control:LS.Globals.SPEAKING})
+        msg.composition = "MERGE"
+      }
       if(!data[i].end &&data[i].duration)
       {
         data[i].end = data[i].start+data[i].duration;
@@ -192,8 +195,8 @@ LS.Globals.processMsg = function(data, fromWS) {
     }
     msg.start = start;
     msg.end = end;
-    if(!msg.composition)
-      msg.composition = "OVERWRITE"
+    
+    msg.composition = msg.composition || "OVERWRITE"
     LS.Globals.BehaviorManager.newBlock(msg);
   }
   else if(data.constructor == Object)

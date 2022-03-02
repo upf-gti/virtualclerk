@@ -459,7 +459,7 @@ BehaviorPlanner.prototype.updateBlinksAndSaccades = function(dt){
       target: target, 
       influence: "EYES",
       offsetDirection: randDir,
-      offsetAngle: Math.random()*3,// + 2,
+      offsetAngle: Math.random()*1,// + 2,
       type:"gazeShift"
     }
     
@@ -509,7 +509,7 @@ BehaviorPlanner.prototype.attentionToUser = function(block, overwrite){
 		start: startHead,
 		end: end,
 		target: "CAMERA",
-    offsetDirection: randOffset,
+    offsetDirection: "CAMERA",
     offsetAngle: 2 + 5*Math.random(),
     type:"headDirectionShift"
 	}

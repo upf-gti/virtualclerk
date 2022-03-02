@@ -624,7 +624,8 @@ GazeManager.prototype.gazePositions = {
   "UP": [0, 130, 400], "DOWN": [0, 80, 400],
   "UPRIGHT": [70, 130, 400], "UPLEFT": [-70, 130, 400],
   "DOWNRIGHT": [70, 80, 400], "DOWNLEFT": [-70, 80, 400],
-  "CAMERA": [0, 100, 400]
+  "CAMERA": [0, 100, 400],
+  "EYESTARGET": [0, 100, 400]
 };
 
 
@@ -708,6 +709,7 @@ Gaze.prototype.targetP = vec3.create();
 // Constructor
 function Gaze (gazeData, shift, lookAt, gazePositions){
 
+  this.influence = gazeData.influence;
   // Init gazeData
   this.initGazeData(gazeData, shift);
 
@@ -863,9 +865,12 @@ Gaze.prototype.initGazeValues = function(isEyes){
   
   // Find target position (copy? for following object? if following object and offsetangle, need to recalculate all the time!)
   if (this.gazePositions)
-    if (this.gazePositions[this.target])
+    if (this.gazePositions[this.target]){
+      var pos = this.gazePositions[this.target];
+      if(this.influence == "HEAD" && this.target == "CAMERA")
+        pos[0] -= pos[0] 
   		vec3.copy(this.targetP, this.gazePositions[this.target]);
-  	else
+    }else
       vec3.set(this.targetP, 0, 110, 400);
   else
     vec3.set(this.targetP, 0, 110, 400);
@@ -955,7 +960,7 @@ Gaze.prototype.initGazeValues = function(isEyes){
       vec3.transformQuat(v,v,q);
       if(isEyes)
       {
-        this.eyelidsFinW = 0.2
+        this.eyelidsFinW = 0.1
         this.squintFinW = 0
       }
       break;
