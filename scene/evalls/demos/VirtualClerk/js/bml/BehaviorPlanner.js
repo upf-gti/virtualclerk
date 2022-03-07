@@ -36,12 +36,12 @@ BehaviorPlanner.prototype.update = function(dt){
   }
   
   // Check if speech has finished to change to WAITING
-  if (this.state == LS.Globals.SPEAKING){
+  /*if (this.state == LS.Globals.SPEAKING){
     if (LS.Globals.BehaviorManager){
       if (LS.Globals.BehaviorManager.lgStack.length == 0 && LS.Globals.BehaviorManager.speechStack.length == 0)
         this.transition({control: LS.Globals.WAITING});
     }
-  }
+  }*/
   
   // Automatic blink and saccades
   return this.updateBlinksAndSaccades(dt);
@@ -211,7 +211,7 @@ BehaviorPlanner.prototype.createBlock = function(){
       this.nextBlockIn = 2 + Math.random()*4;
       // Head
       if (Math.random() < 0.6){
-        block.head = {
+       /* block.head = {
           start: 0,
           end: 2.5 + Math.random()*1.5,
           lexeme: "NOD",
@@ -219,7 +219,7 @@ BehaviorPlanner.prototype.createBlock = function(){
           type:"head"
         }
         // Deviate head slightly
-        if (Math.random() < 0.85)
+        /*if (Math.random() < 0.85)
         {
           var offsetDirections = ["DOWNRIGHT", "DOWNLEFT", "LEFT", "RIGHT"]; // Upper and sides
           var randOffset = offsetDirections[Math.floor(Math.random() * offsetDirections.length)];
@@ -231,7 +231,7 @@ BehaviorPlanner.prototype.createBlock = function(){
             offsetAngle: 1 + Math.random()*3,
             type:"headDirectionShift"
           }
-        }
+        }*/
       }
       // Esporadic raising eyebrows
       if (Math.random() < 0.7)
@@ -306,7 +306,7 @@ BehaviorPlanner.prototype.createBlock = function(){
       }
 
       // frown
-      if (Math.random() < 0.6)
+    /*  if (Math.random() < 0.6)
       {
         block.face = {
           start: 0,
@@ -337,7 +337,7 @@ BehaviorPlanner.prototype.createBlock = function(){
             lexeme: lexeme
         }
           block.face.type="face"
-      }
+      }*/
       break;
   
   // WAITING
@@ -361,7 +361,7 @@ BehaviorPlanner.prototype.createBlock = function(){
         block.blink = {start: 0, end: 0.2 + Math.random()*0.5, type:"blink"};
 
       // Set to neutral face (VALENCE-AROUSAL)
-      block.faceShift = {start: 0, end: 2, valaro: [0,0], type:"faceShift"};
+      block.faceShift = {start: 0, end: 2, valaro: [0,0], type:"faceVA", shift:true};
 
      	break;
   }
@@ -490,7 +490,8 @@ BehaviorPlanner.prototype.attentionToUser = function(block, overwrite){
 		end: end,
 		influence: "EYES",
 		target: "CAMERA",
-    type:"gazeShift"
+    type:"gazeShift",
+    shift:true
 	}
   
 	// blink
@@ -510,7 +511,7 @@ BehaviorPlanner.prototype.attentionToUser = function(block, overwrite){
 		end: end,
 		target: "CAMERA",
     offsetDirection: "CAMERA",
-    offsetAngle: 2 + 5*Math.random(),
+    offsetAngle: 0,//2 + 5*Math.random(),
     type:"headDirectionShift"
 	}
   
@@ -518,7 +519,8 @@ BehaviorPlanner.prototype.attentionToUser = function(block, overwrite){
     start: startHead,
     end: end,
     valaro: [this.defaultValence, 0],
-    type:"faceShift"
+    type:"faceShift",
+    shift: true
   }
   
   // Force and remove existing bml instructions
@@ -528,6 +530,7 @@ BehaviorPlanner.prototype.attentionToUser = function(block, overwrite){
     block.faceShift = faceShift;
     block.gazeShift = gazeShift;
     block.headDirectionShift = headDir;
+    block.composition = "OVERWRITE";
   } 
   else
   {

@@ -22,8 +22,7 @@ function Blink (blinkData, eyeLidsBSW){
 }
 
 
-Blink.prototype.update = function(dt, facialEyeLidsBSW){
-  
+Blink.prototype.update = function(dt){
   this.time += dt;
   
   // Waiting to reach start
@@ -50,17 +49,16 @@ Blink.prototype.update = function(dt, facialEyeLidsBSW){
     // Cosine interpolation
     inter = Math.cos(Math.PI*inter)*0.5 + 0.5;
     // Interpolate with scene eyeLidsBSW
-    return facialEyeLidsBSW*(1-inter) + this.targetWeight * inter;
+    return this.initialWeight*(1-inter) + this.targetWeight * inter;
   }
   
   // End 
   if (this.time >= this.end){
     this.transition = false;
-    return facialEyeLidsBSW;
+    return this.initialWeight;
   }
   
 }
-
 
 // --------------------- FACIAL EXPRESSIONS ---------------------
 // BML
@@ -80,20 +78,15 @@ Blink.prototype.update = function(dt, facialEyeLidsBSW){
 // face/faceShift can contain several sons of type faceLexeme without sync attr
 // valaro Range [-1, 1]
 // Scene inputs: sceneBSW
-
 FacialExpr.prototype.sceneBSW;
-
-
 // Variables for Valence Arousal
 FacialExpr.prototype.initialVABSW = [];
 FacialExpr.prototype.targetVABSW = [];
-
 // Variables for Lexemes
 FacialExpr.prototype.initialLexBSW = [];
 FacialExpr.prototype.targetLexBSW = [];
-
 // Psyche Interpolation Table
-FacialExpr.prototype._pit = [0.000, 0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,
+/*FacialExpr.prototype._pit = [0.000, 0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,  0.000,
                             0.000,  1.000,  0.138,  1.00,  0.000,  0.675,  0.000,  0.056,  0.200,  0.116,  0.100,
                             0.500,  0.866,  0.000,  0.700,  0.000,  0.000,  0.000,  0.530,  0.000,  0.763,  0.000,
                             0.866,  0.500,  0.000,  1.000,  0.000,  0.000,  0.600,  0.346,  0.732,  0.779,  0.000,
@@ -103,12 +96,52 @@ FacialExpr.prototype._pit = [0.000, 0.000,  0.000,  0.000,  0.000,  0.000,  0.00
                             0.000,  -1.000, 0.527,  0.000,  0.441,  0.531,  0.000,  0.000,  1.000,  0.000,  0.600,
                             -0.707, -0.707, 1.000,  0.000,  0.000,  0.000,  0.500,  1.000,  0.000,  0.000,  0.600,
                             -1.000, 0.000,  0.995,  0.000,  0.225,  0.000,  0.000,  0.996,  0.000,  0.996,  0.200,
-                            -0.707, 0.707,  0.138,  0.075,  0.000,  0.675,  0.300,  0.380,  0.050,  0.216,  0.300];
+                            -0.707, 0.707,  0.138,  0.075,  0.000,  0.675,  0.300,  0.380,  0.050,  0.216,  0.300];*/
+/* "valence", "arousal" ,"BLINK","CHEEK_RAISER", "LIP_CORNER_PULLER", "BROW_LOWERER", "DIMPLER", "OUTER_BROW_RAISER", "
+UPPER_LID_RAISER", "JAW_DROP","LID_TIGHTENER", "LIP_STRECHER","NOSE_WRINKLER", "LIP_CORNER_DEPRESSOR", "CHIN_RAISER", "LIP_CORNER_PULLER_RIGHT", "DIMPLER_RIGHT"*/
+/*FacialExpr.prototype._pit = [
+  [0.95, 0.23 ,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0 ],//HAPPINESS
+  [-0.81, -0.57, 0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0 ], //SADNESS
+  [0.22, 0.98, 0,0,0,1,0,1,1,1,0,0,0,0,0,0,0,0 ], //SURPRISED
+  [-0.25, 0.98 ,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0 ], //FEAR
+  [-0.76, 0.64,0 , 0,0,0,1,0,1,0,1,0,1,0,0,0,0,0 ], //ANGER
+  [-0.96, 0.23,0, 0,0,0,0,0,0,0,0,0,0,1,1,1,0,0 ], //DISGUST
+  [-0.98, -0.21,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,1,1 ], //CONTEMPT
+  [0, 0 ,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ] //NEUTRAL
+ ]*/
+FacialExpr.prototype.VALexemes = ["BLINK","CHEEK_RAISER", "LIP_CORNER_PULLER", "BROW_LOWERER", "DIMPLER", "OUTER_BROW_RAISER", "UPPER_LID_RAISER", "JAW_DROP","LID_TIGHTENER", "LIP_STRECHER","NOSE_WRINKLER", "LIP_CORNER_DEPRESSOR", "CHIN_RAISER", "LIP_CORNER_PULLER_RIGHT", "DIMPLER_RIGHT"]
+FacialExpr.prototype._pit = [
+  [//ANGRY 
+    -0.76, 0.64, 0, 0, 0.37735849056603776, 0.37735849056603776, 0.660377358490566, 0.660377358490566, 0, 0, 0.006777392958909609, 0.006174350308024318, 0, 0, 0.008490566037735849, 0.008490566037735849, 0.3113207547169812, 0.3113207547169812, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.009433962264150943, 0.007983478260680202, 0.018497328267128684, 0, 0, 0.2655452832234524, 0.27559599407154056, 0.038135610804944806, 0.038135610804944806, 0.2358490566037736, 0.2358490566037736, 0, 0, 0, 0, 0
+    ],
+  [//HAPPY
+    0.95, 0.23, 0, 0, -0.18916378536627232, -0.179660980579041, 0, 0, 0, 0, 0, 0, 0, 0, 0.24764010809164083, 0.24764010809164083, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.20502509409574698, 0, 0, 0, 0, 0, 0.7803277830403155, 0.8111380948254938, 0, 0, 0, 0, 0, 0, 0
+    ],
+  [//SAD
+    -0.81, -0.57, 0, 0, 0, 0, 0, 0, 0.769674029541342, 0.8122890435372361, 0, 0, 0, 0, 0, 0, 0.5033301920670048, 0.46071517807111073, 0, 0.5565989595618721, 0, 0, 0, 0, 0, 0, 0, 0.3861389035782963, 0.02391128461319747, 0, 0, 0.5992139735577662, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ],
+  [//SURPRISED
+    0.22, 0.98, 0, 0, 0, 0, 0, 0, 0.2582938615906143, 0.21567884759472045, 0.3754851500793228, 0.3541776430813759, 0, 0, 0.5779064665598193, 0.5779064665598193, 0, 0, 0, 0, 0, 0, 0, 0, 0.3435238895824022, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.2582938615906143, 0.26894761508958775, 0.13044881960293253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ],
+  [//SACRED
+    -0.25, 0.98, 0, 0, 0.21567884759472045, 0.1943713405967733, 0.5, 0.5, 0.5246376990649517, 0.5, 0, 0, 0, 0, 0.15, 0.15, 0, 0, 0, 0, 0, 0, 0, 0, 0.3435238895824022, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.2582938615906143, 0.26894761508958775, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ],
+  [//DISGUSTED
+    -0.96, 0.23, 0, 0, 0, 0, 0.42875391757419035, 0.49267643856803134, 0, 0, 0, 0, 0, 0, 0, 0, 0.23698635459266737, 0.15175632660087945, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.21567884759472045, 0, 0, 0.3104116803737398, 0.3541776430813759, 0, 0, 0.7, 0.7, 0, 0, 0, 0.4713689315700842, 0.3435238895824022
+    ],
+    [//CONTEMPT
+      -0.98, -0.21, 0.1, 0.1, 0, 0, 0, 0, 0, 0, 0.24764010809164083, 0.26894761508958775, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.4981226368365037, 0, 0, 0, 0, 0, 0, 0, 0.10914131260498539, 0, 0, 0, 0, 0, 0, 0, 0
+    ],
+    [//NEUTRAL
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ]
+]
+FacialExpr.prototype._p = vec3.create();
+FacialExpr.prototype._pA = vec3.create();
+ 
 
 FacialExpr.prototype._p = vec3.create();
 FacialExpr.prototype._pA = vec3.create();
-
-
 FacialExpr.prototype.lexemes = {LIP_CORNER_DEPRESSOR :0,
                                 LIP_CORNER_DEPRESSOR_LEFT: 0,
                                 LIP_CORNER_DEPRESSOR_RIGHT: 0,
@@ -142,13 +175,10 @@ FacialExpr.prototype.lexemes = {LIP_CORNER_DEPRESSOR :0,
                                 DIMPLER: 0,
                                 JAW_DROP: 0,
                                 MOUTH_STRETCH: 0};
-
-
 // Blend shapes indices
 FacialExpr.prototype.LIP_CORNER_DEPRESSOR = "14&15"; // AU15 sad
 FacialExpr.prototype.LIP_CORNER_DEPRESSOR_LEFT = "14"; // LAU15 sad
 FacialExpr.prototype.LIP_CORNER_DEPRESSOR_RIGHT = "15"; // RAU15 sad
-
 FacialExpr.prototype.LIP_CORNER_PULLER = "41&42"; // AU12 happy
 FacialExpr.prototype.LIP_CORNER_PULLER_LEFT = "41"; // LAU12 happy
 FacialExpr.prototype.LIP_CORNER_PULLER_RIGHT = "42"; // RAU12 happy
@@ -163,25 +193,21 @@ FacialExpr.prototype.LIP_STRECHER = "14&15&32"; // AU20
 FacialExpr.prototype.LIP_FUNNELER = "37&38"; // AU22
 FacialExpr.prototype.LIP_TIGHTENER = "30&31"; // AU23
 FacialExpr.prototype.LIP_PRESSOR = "25&28&46"; // AU24
-
 FacialExpr.prototype.BROW_LOWERER = "2&3&4&5"; // AU4 
 FacialExpr.prototype.BROW_LOWERER_LEFT = "2&4"; // 
 FacialExpr.prototype.LOWER_RIGHT_BROW = "3"; // brows down
 FacialExpr.prototype.LOWER_BROWS = "4&5";
-
 FacialExpr.prototype.INNER_BROW_RAISER = "6&7"; // AU1 rows rotate outwards
 FacialExpr.prototype.OUTER_BROW_RAISER = "8&9"; // AU2 brows up (right)
 FacialExpr.prototype.RAISE_LEFT_BROW = "8"; // left brow up
 FacialExpr.prototype.RAISE_RIGHT_BROW = "9"; // right brow up
 FacialExpr.prototype.RAISE_BROWS =  "8&9"; //  brow up
-
 FacialExpr.prototype.UPPER_LID_RAISER = "12&13"; // AU5 negative eyelids closed /wide eyes
 FacialExpr.prototype.CHEEK_RAISER = "43&44"; // AU6 squint
 FacialExpr.prototype.LID_TIGHTENER = "43&44"; // AU44 squint
 FacialExpr.prototype.EYES_CLOSED = "0&1"; // AU43 eyelids closed
 FacialExpr.prototype.BLINK = "0&1"; // AU45 eyelids closed
 FacialExpr.prototype.WINK = "0"; // AU46   
-
 FacialExpr.prototype.NOSE_WRINKLER = "39&40"; // AU9
 FacialExpr.prototype.UPPER_LIP_RAISER = "48&49"; // AU10
 FacialExpr.prototype.DIMPLER = "-43&-44&25"; // AU14
@@ -212,13 +238,43 @@ function FacialExpr (faceData, shift, sceneBSW){
   // Scene variables
   if (sceneBSW)
     this.sceneBSW = sceneBSW;
-
   // Init face valaro
   if (faceData.valaro){
     this.initFaceValAro(faceData, shift);
     return;
   }
-
+  else if(faceData.emotion){
+    switch(faceData.emotion)
+    {
+      case "ANGER":        
+        faceData.valaro = this._pit[0].slice(0,2);
+        break;
+      case "HAPPINESS":
+        faceData.valaro = this._pit[1].slice(0,2);
+        break;
+      case "SADNESS":
+        faceData.valaro = this._pit[2].slice(0,2);   
+        break;
+      case "SURPRISE":
+        faceData.valaro = this._pit[3].slice(0,2);
+        break;
+      case "FEAR":
+        faceData.valaro = this._pit[4].slice(0,2);
+        break;
+      case "DISGUST":
+        faceData.valaro = this._pit[5].slice(0,2);
+        break;
+      case "CONTEMPT":
+        faceData.valaro = this._pit[6].slice(0,2);
+        break;
+      case "NEUTRAL":        
+        faceData.valaro = this._pit[7].slice(0,2);
+        
+        break;
+    }
+    this.initFaceValAro(faceData, shift);
+    return;
+  }
   // Init face lexemes 
   if (faceData.lexeme){
     // faceLexeme
@@ -234,12 +290,7 @@ function FacialExpr (faceData, shift, sceneBSW){
     return;
   }
   
-
-
 }
-
-
-
 
 FacialExpr.prototype.initFaceValAro = function(faceData, shift){
   // Sync
@@ -255,7 +306,6 @@ FacialExpr.prototype.initFaceValAro = function(faceData, shift){
     
     this.relax = 0;
   }
-
   // Valence and arousal
   this.valaro = faceData.valaro || [0.1, 0.1];
   // Normalize
@@ -264,23 +314,28 @@ FacialExpr.prototype.initFaceValAro = function(faceData, shift){
     this.valaro[0]/= magn;
     this.valaro[1]/= magn;
   }
-
-
   // Initial blend shapes
-  if (this.sceneBSW)
-    for (var i = 0; i< this.sceneBSW.length; i++)
-      this.initialVABSW[i] = this.sceneBSW[i];
-  // Target blend shapes
+  /*if (this.sceneBSW[FacialExpr.BODY_NAME])
+    for (var i = 0; i< this.sceneBSW[FacialExpr.BODY_NAME].length; i++){
+      if(!this.initialVABSW.length) 
+        this.initialVABSW.push(this.sceneBSW[FacialExpr.BODY_NAME][i]);
+      else 
+        this.initialVABSW[i] = this.sceneBSW[FacialExpr.BODY_NAME][i];
+      if(!this.targetVABSW.length) 
+        this.targetVABSW.push(this.sceneBSW[FacialExpr.BODY_NAME][i]);
+      else this.targetVABSW[i] = this.sceneBSW[FacialExpr.BODY_NAME][i];
+    }
+    */  
+ // Target blend shapes
   this.VA2BSW(this.valaro, this.targetVABSW);
   
-
   
   // Start
   this.transition = true;
   this.time = 0;
-
 }
-FacialExpr.BODY_NAME = "Body_SSS";
+
+FacialExpr.BODY_NAME = "Body";
 // There can be several facelexemes working at the same time then? lexemes is an array of lexeme objects
 FacialExpr.prototype.initFaceAU = function(faceData, shift, lexemes){
   FacialExpr.BODY_NAME = this.sceneBSW["Body_SSS"] ? "Body_SSS" : "Body";
@@ -426,8 +481,10 @@ FacialExpr.prototype.updateVABSW = function(interVABSW, dt){
 
   // Immediate change
   if (this.attackPeak == 0 && this.end == 0 && this.time == 0){
-    for (var i = 0; i < this.sceneBSW.length; i++)
-      interVABSW[i] = this.targetVABSW[i];
+    /*for (var i = 0; i < this.sceneBSW[FacialExpr.BODY_NAME].length; i++)
+      interVABSW[FacialExpr.BODY_NAME][i] = this.targetVABSW[FacialExpr.BODY_NAME][i];*/
+    for(var j in this.targetVABSW)	
+      interVABSW[FacialExpr.BODY_NAME][j] = this.targetVABSW[j];
     // Increase time and exit
     this.time +=dt;
     return;
@@ -457,8 +514,10 @@ FacialExpr.prototype.updateVABSW = function(interVABSW, dt){
     inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5;
     //inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5; // to increase curve, keep adding cosines
     // Interpolation
-    for (var i = 0; i < this.sceneBSW.length; i++)
-      interVABSW[i] = this.initialVABSW[i]*(1-inter) + this.targetVABSW[i]*inter;
+    /*for (var i = 0; i < this.sceneBSW[FacialExpr.BODY_NAME].length; i++)
+      interVABSW[FacialExpr.BODY_NAME][i] = this.initialVABSW[FacialExpr.BODY_NAME][i]*(1-inter) + this.targetVABSW[FacialExpr.BODY_NAME][i]*inter;*/
+    for(var j in this.targetVABSW)	
+      interVABSW[FacialExpr.BODY_NAME][j] = this.initialVABSW[j]*(1-inter) + this.targetVABSW[j]*inter;
     
   }
   
@@ -468,8 +527,11 @@ FacialExpr.prototype.updateVABSW = function(interVABSW, dt){
     // Cosine interpolation
     inter = Math.cos(Math.PI*inter)*0.5 + 0.5;
     // Interpolation
-    for (var i = 0; i < this.sceneBSW.length; i++)
-      interVABSW[i] = this.initialVABSW[i]*(1-inter) + this.targetVABSW[i]*inter;
+    /*for (var i = 0; i < this.sceneBSW[FacialExpr.BODY_NAME].length; i++)
+      interVABSW[FacialExpr.BODY_NAME][i] = this.initialVABSW[FacialExpr.BODY_NAME][i]*(1-inter) + this.targetVABSW[FacialExpr.BODY_NAME][i]*inter;*/
+      for(var j in this.targetVABSW)	
+        interVABSW[FacialExpr.BODY_NAME][j] = this.initialVABSW[j]*(1-inter) + this.targetVABSW[j]*inter;	
+    
   }
   
   
@@ -548,61 +610,160 @@ FacialExpr.prototype.updateLexemesBSW = function(interLexBSW, dt){
     this.transition = false;
   }
   
+}
 
+FacialExpr.prototype.precomputeVAWeights = function(gridsize){	
+  var points = this.points;	
+  var num_points = points.length;	
+  var pos = vec2.create();	
+  var circular = true;	
+  this._values_changed = false;	
+  this._version++;	
+  	
+  var total_nums = 2 * gridsize * gridsize;	
+  if(!this._precomputed_weights || this._precomputed_weights.length != total_nums )	
+    this._precomputed_weights = new Float32Array( total_nums );	
+  var values = this._precomputed_weights;	
+  this._precomputed_weights_gridsize = gridsize;	
+  for(var y = 0; y < gridsize; ++y)	
+    for(var x = 0; x < gridsize; ++x)	
+    {	
+      var nearest = -1;	
+      var min_dist = 100000;	
+      for(var i = 0; i < num_points; ++i)	
+      {	
+        pos[0] = x / gridsize;	
+        pos[1] = y / gridsize;	
+        if(circular)	
+        {	
+          pos[0] = pos[0] * 2 - 1;	
+          pos[1] = pos[1] * 2 - 1;	
+        }	
+        var dist = vec2.distance( pos, points[i].pos );	
+        if( dist > min_dist )	
+          continue;	
+        nearest = i;	
+        min_dist = dist;	
+      }	
+      values[ x*2 + y*2*gridsize ] = nearest;	
+      values[ x*2 + y*2*gridsize + 1] = min_dist;	
+    }	
+  return values;	
 }
 
 
-
-
-
-
-
-
-FacialExpr.prototype.VA2BSW = function(valAro, facialBSW){
-  
-  maxDist = 0.8;
-  
-  var blendValues = [0,0,0,0,0,0,0,0,0]; // Memory leak, could use facialBSW and set to 0 with a for loop
-  var bNumber = 11;
-  
-  this._p[0] = valAro[0];
-  this._p[1] = valAro[1];
-  this._p[2] = 0; // why vec3, if z component is always 0, like pA?
-
-  this._pA[2] = 0;
-
-  for (var count = 0; count < this._pit.length/bNumber; count++){
-    this._pA[1] = this._pit[count*bNumber];
-    this._pA[0] = this._pit[count*bNumber+1];
-
-    var dist = vec3.dist(this._pA, this._p);
-    dist = maxDist - dist;
-
-    // If the emotion (each row is an emotion in pit) is too far away from the act-eval point, discard
-    if (dist > 0){
-      for (var i = 0; i < bNumber-2; i++){
-        blendValues[i] += this._pit[count*bNumber +i+2] * dist;
-      }
-    }
-  }
-
-
-  // Store blend values
-  facialBSW [ 0 ] = blendValues[0]; // sad
-  facialBSW [ 1 ] = blendValues[1]; // smile
-  facialBSW [ 2 ] = blendValues[2]; // lips closed pressed
-  facialBSW [ 3 ] = blendValues[3]; // kiss
-  
-  facialBSW [4]  = blendValues[4]; // jaw
-
-  facialBSW [5] = blendValues[5]; // eyebrow down
-  facialBSW [6] = blendValues[6]; // eyebrow rotate outwards
-  facialBSW [7] = blendValues[7]; // eyebrow up
-  facialBSW [8] = blendValues[8]; // eyelids closed
-
+FacialExpr.prototype.VA2BSW = function(valAro, facialBSW){	
+  	
+  maxDist = 0.8;	
+  var gridsize = 100;	
+  //var blendValues = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]; // Memory leak, could use facialBSW and set to 0 with a for loop	
+  var bNumber = 18;	
+  var blendValues = [];	
+  blendValues.length = this._pit[0].length - 2;	
+  blendValues.fill(0);	
+  this._p[0] = valAro[0];	
+  this._p[1] = valAro[1];	
+  this._p[2] = 0; // why vec3, if z component is always 0, like pA?	
+  var pos = vec2.create();	
+  pos.set(valAro);	
+  this._pA[2] = 0;	
+  this.points = [];	
+  for (var count = 0; count < this._pit.length; count++){	
+    this._pA[0] = this._pit[count][0];	
+    this._pA[1] = this._pit[count][1];	
+    var point = vec2.create();	
+    point.set([this._pA[0], this._pA[1]]);	
+    this.points.push({pos: point})	
+    /*var dist = vec3.dist(this._pA, this._p);	
+    dist = maxDist - dist;	
+    // If the emotion (each row is an emotion in pit) is too far away from the act-eval point, discard	
+    if (dist > 0){	
+      for (var i = 0; i < bNumber-2; i++){	
+        blendValues[i] += this._pit[count][i+2] * dist;	
+      }	
+    }*/	
+  }	
+  //precompute VA points weight in the grid	
+  var values = this._precomputed_weights;	
+  if(!values || this._values_changed )	
+    values = this.precomputeVAWeights(gridsize);	
+  var pos2 = vec2.create();	
+  var circular = true;	
+  var weights = [];	
+  weights.length = this._pit.length;	
+  weights.fill(0);	
+ //weights = blendValues	
+  var total_inside = 0;	
+  for(var y = 0; y < gridsize; ++y)	
+    for(var x = 0; x < gridsize; ++x)	
+    {	
+      pos2[0] = x / gridsize;	
+      pos2[1] = y / gridsize;	
+      if(circular)	
+      {	
+        pos2[0] = pos2[0] * 2 - 1;	
+        pos2[1] = pos2[1] * 2 - 1;	
+      }	
+      var data_pos = x*2 + y * gridsize*2;	
+      var point_index = values[ data_pos ];	
+      var is_inside = vec2.distance( pos2, pos ) < (values[ data_pos + 1] + 0.001); //epsilon	
+      if(is_inside)	
+      {	
+        weights[ point_index ] += 1;	
+        total_inside++;	
+      }	
+    }	
+  for(var i = 0; i < weights.length; ++i)	
+  {	
+    weights[i] /= total_inside;	
+    for (var j = 0; j < blendValues.length; j++){	
+      blendValues[j] += this._pit[i][j+2] * weights[i];	
+    }	
+    //this.weights_obj[ this.points[i].name ] = weights[i];	
+  }	
+  this.initialVABSW = {};	
+  this.targetVABSW = {};
+  for (var j = 0; j < blendValues.length; j++){	
+    this.initialVABSW[j] = this.sceneBSW[FacialExpr.BODY_NAME][j];	
+    this.targetVABSW[j] = blendValues[j];	
+  }	
+ /* this.indicesVA = [];	
+  this.initialVABSW = {};	
+  this.targetVABSW = {};	
+  var j = 0;	
+  for(var i=0; i< this.VALexemes.length; i++)	
+  {	
+    var index = this[this.VALexemes[i]].split("&");	
+  	
+    if (index !== undefined)	
+    {	
+      // Indices	
+      this.indicesVA[j] = index;	
+     /* this.initialVABSW[j] = {};	
+      this.targetVABSW[j] = [];*/	
+    /*  for(var idx in index)	
+      {	
+        // Initial	
+        var sign = 1;	
+        if(index[idx].includes("-"))	
+        {	
+          sign = -1;	
+          var ii = this.indicesVA.indexOf(idx);	
+          index[idx] = index[idx].replace("-","");	
+          this.indicesVA[j] = index[idx];	
+        }	
+        	
+        this.initialVABSW[index[idx]] = this.sceneBSW[FacialExpr.BODY_NAME][index[idx]];	
+        // Target	
+        if(this.targetVABSW[index[idx]]!=undefined)	
+          this.targetVABSW[index[idx]] += sign*blendValues[i];	
+        else	
+          this.targetVABSW[index[idx]] = sign*blendValues[i];	
+      }	
+    }	
+    j++	
+  }*/	
 }
-
-
 
 
 
@@ -627,7 +788,13 @@ GazeManager.prototype.gazePositions = {
   "CAMERA": [0, 100, 400],
   "EYESTARGET": [0, 100, 400]
 };
-
+Gaze.prototype.gazeBS = {	
+  "RIGHT": {squint:0, eyelids:0}, "LEFT": {squint:0, eyelids:0},	
+  "UP": {squint:0.3, eyelids:0}, "DOWN": {squint:0, eyelids:0.5},	
+  "UPRIGHT": {squint:0.3, eyelids:0}, "UPLEFT": {squint:0.3, eyelids:0},	
+  "DOWNRIGHT": {squint:0, eyelids:0.5}, "DOWNLEFT": {squint:0, eyelids:0.5},	
+  "CAMERA": {squint:0, eyelids:0}, 	"EYESTARGET": {squint:0, eyelids:0}
+};
 
 // Constructor (lookAt objects and gazePositions)
 function GazeManager (lookAtNeck, lookAtHead, lookAtEyes, gazePositions){
@@ -807,8 +974,8 @@ Gaze.prototype.update = function(dt , atEyes){
     
     if(atEyes)
     {
-      this.eyelidsW =this.eyelidsInitW*inter+this.eyelidsFinW*(1-inter); 
-      this.squintW =this.squintInitW*(inter)+this.squintFinW*(1-inter); 
+      this.eyelidsW =this.eyelidsInitW*(1-inter)+this.eyelidsFinW*(inter); 	
+      this.squintW =this.squintInitW*(1-inter)+this.squintFinW*(inter); 
     }
    // inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5; // to increase curve, keep adding cosines
     // lookAt pos change
@@ -866,10 +1033,22 @@ Gaze.prototype.initGazeValues = function(isEyes){
   // Find target position (copy? for following object? if following object and offsetangle, need to recalculate all the time!)
   if (this.gazePositions)
     if (this.gazePositions[this.target]){
-      var pos = this.gazePositions[this.target];
-      if(this.influence == "HEAD" && this.target == "CAMERA")
-        pos[0] -= pos[0] 
-  		vec3.copy(this.targetP, this.gazePositions[this.target]);
+      var pos = vec3.create();	
+      vec3.copy(pos,this.gazePositions[this.target])	
+      if(this.target == "CAMERA")	
+      {	
+        // this.gazePositions[this.target][0]-=2;	
+        
+        pos[2] = 400;	
+        if(this.influence == "HEAD" && this.target == "CAMERA"){	
+          pos[0] -= pos[0] 	
+        }	
+        if(isEyes)	
+          pos[1] += 5;	
+        else	
+          pos[1] -= 8;	
+      }	
+      vec3.copy(this.targetP, pos);
     }else
       vec3.set(this.targetP, 0, 110, 400);
   else
@@ -881,10 +1060,17 @@ Gaze.prototype.initGazeValues = function(isEyes){
   // Move to origin
   v = this._tempV;
   q = this._tempQ;
+  var initP = vec3.create();
+  vec3.copy(initP, this.headPos);
+  if(isEyes)
+    initP[1]-=3;
   vec3.subtract(v, this.targetP, this.headPos);
   magn = vec3.length(v);
   vec3.normalize(v,v);
-  
+
+  this.eyelidsFinW = this.gazeBS[this.target].eyelids;	
+  this.squintFinW = this.gazeBS[this.target].squint;
+
   // Rotate vector and reposition
   switch (this.offsetDirection){
     case "UPRIGHT":
@@ -893,8 +1079,7 @@ Gaze.prototype.initGazeValues = function(isEyes){
       vec3.transformQuat(v,v,q);
       if(isEyes)
       {
-        this.eyelidsFinW =0
-      	this.squintFinW = 0.5
+        this.squintFinW*=Math.abs(this.offsetAngle/30)
       }
       break;
     case "UPLEFT":
@@ -903,8 +1088,7 @@ Gaze.prototype.initGazeValues = function(isEyes){
       vec3.transformQuat(v,v,q);
       if(isEyes)
       {
-        this.eyelidsFinW = 0
-        this.squintFinW = 0.5
+        this.squintFinW*=Math.abs(this.offsetAngle/30)
       }
       break;
     case "DOWNRIGHT":
@@ -913,8 +1097,7 @@ Gaze.prototype.initGazeValues = function(isEyes){
       vec3.transformQuat(v,v,q);
       if(isEyes)
       {
-        this.eyelidsFinW = 0.1
-        this.squintFinW = 0
+        this.squintFinW*=Math.abs(this.offsetAngle/30)
       }
       
       break;
@@ -924,25 +1107,16 @@ Gaze.prototype.initGazeValues = function(isEyes){
       vec3.transformQuat(v,v,q);
       if(isEyes)
       {
-        this.eyelidsFinW = 0.1
-        this.squintFinW = 0
+        this.squintFinW*=Math.abs(this.offsetAngle/30)
       }
       break; 
     case "RIGHT":
       vec3.rotateY(v,v,this.offsetAngle*DEG2RAD);
-      if(isEyes)
-      {
-        this.eyelidsFinW = 0
-        this.squintFinW = 0
-      }
+
       break;
     case "LEFT":
       vec3.rotateY(v,v,-this.offsetAngle*DEG2RAD);
-      if(isEyes)
-      {
-        this.eyelidsFinW = 0
-        this.squintFinW = 0
-      }
+
       break;
     case "UP":
       quat.setAxisAngle(q, v, -45*DEG2RAD);//quat.setAxisAngle(q, v, -90*DEG2RAD);
@@ -950,8 +1124,7 @@ Gaze.prototype.initGazeValues = function(isEyes){
       vec3.transformQuat(v,v,q);
       if(isEyes)
       {
-        this.eyelidsFinW = 0
-        this.squintFinW = 0.5
+        this.squintFinW*=Math.abs(this.offsetAngle/30)
       }
       break;
     case "DOWN":
@@ -960,8 +1133,7 @@ Gaze.prototype.initGazeValues = function(isEyes){
       vec3.transformQuat(v,v,q);
       if(isEyes)
       {
-        this.eyelidsFinW = 0.1
-        this.squintFinW = 0
+        this.eyelidsFinW*=Math.abs(this.offsetAngle/30)
       }
       break;
   }
@@ -1025,7 +1197,7 @@ HeadBML.prototype.initHeadData = function(headData){
   
   // Lexeme, repetition and amount
 	this.lexeme = headData.lexeme || "NOD";
-	this.amount = headData.amount || 0.5;
+	this.amount = headData.amount || 0.2;
 
 	// Maximum rotation amplitude
   if (this.lexeme == "NOD")

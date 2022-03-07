@@ -1,3 +1,4 @@
+var connected_to_session = false;
 function init_websocket () {
   // if user is running mozilla then use it's built-in WebSocket
   window.WebSocket = window.WebSocket || window.MozWebSocket;
@@ -141,8 +142,40 @@ function init_websocket () {
           loadData(json.data_type, json.data);
           break;
         case "info":
-          if(json.data.includes("connected to session with token"))
+          if(json.data.includes("connected to session with token")){
             loadData('people')//requestData();
+            connected_to_session = true;
+          }
+
+          if(json.data.includes("disconnected from session"))
+          {
+            connected_to_session = false;
+            var speech_btn = document.getElementById("speech-btn");
+            if(speech_btn.style.visibility == 'visible')
+              speech_btn.style.visibility = "hidden";
+            if(speech_btn.classList.contains('anim'))
+              speech_btn.classList.remove('anim');
+            var btn = document.getElementById("play-btn");
+            if(btn.classList.contains("w3-gray-color"))
+            {
+                btn.classList.remove("w3-gray-color");
+                btn.classList.add("w3-red-color");
+            }
+            btn.style.visibility = "visible";
+            var waiting_cnt = document.getElementById("waiting-container")
+            waiting_cnt.style.visibility = "visible";
+            document.getElementById('session').style.display = "block"
+
+            var btnM = document.getElementById("mute-btn");
+            var micro = document.getElementById("speech-btn");
+            if(btnM.classList.contains("active"))
+            {
+                btnM.classList.remove("active");
+                //micro.classList.add("anim");
+            }            
+            
+            setEvents()
+          }
           break;
       }
     }

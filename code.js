@@ -6,7 +6,7 @@ recognition.lang = 'en-US';
 recognition.interimResults = false;
 recognition.maxAlternatives = 1;
 var final_transcript = "";
-var start_recognition = false;
+
 
 var state = 2; //WAITING
 var counter = 0;
@@ -22,6 +22,7 @@ var CORE = {
 	lastQuestion: "",
 	finder: null,
 	start: false,
+	start_recognition: false,
 	init: function (  )
 	{
 		var that = this;
@@ -41,7 +42,7 @@ var CORE = {
 
 		//-------------------------------------------------------Recognition Events
 		recognition.onstart = function(event){
-			start_recognition = true;
+			that.start_recognition = true;
 			console.log("Recognition Start");
 		
 		}
@@ -65,7 +66,7 @@ var CORE = {
 			if(LS)
 			{
 				state = LS.Globals.LISTENING;
-				LS.Globals.processMsg(JSON.stringify({control:LS.Globals.LISTENING}), true);
+				LS.Globals.processMsg(JSON.stringify({type:'control',control:LS.Globals.LISTENING}), true);
 			}
 			
 			// console.log("LISTENING(speech start)")
@@ -80,7 +81,7 @@ var CORE = {
 			if(LS)
 			{
 				state = LS.Globals.PROCESSING;
-				LS.Globals.processMsg(JSON.stringify({control:LS.Globals.PROCESSING}), true);
+				//LS.Globals.processMsg(JSON.stringify({type:'control',control:LS.Globals.PROCESSING}), true);
 			}
 			var that = this;
 			if(that.tabRemote)
@@ -91,7 +92,7 @@ var CORE = {
 
 		recognition.onend = function(event){
 			console.log("Recognition stopped from recognition.onend()");
-			start_recognition = false;
+			that.start_recognition = false;
 
 		}
 		recognition.onresult = function(event) {
@@ -172,7 +173,7 @@ var CORE = {
 	
 
 	},
-	appLoop: function()
+	appLoop: function(dt)
 	{
 
 		if(window && this.start)
@@ -196,33 +197,34 @@ var CORE = {
 
 				var isSpeaking = LS.Globals.speaking;
 		
-				if(isSpeaking&&start_recognition)
+				if(isSpeaking&&this.start_recognition)
 				{
 					recognition.stop();
 					state = LS.Globals.PROCESSING
-					LS.Globals.processMsg(JSON.stringify({control: state}), true);
+					//LS.Globals.processMsg(JSON.stringify({type:'control', control: state}), true);
 					
 				}
-				else if(!isSpeaking&&!start_recognition&&!mute && recognition_enabled)
+				else if(!isSpeaking&&!this.start_recognition&&!mute && recognition_enabled)
 				{
 					recognition.start();
 					if(state==LS.Globals.SPEAKING)
 					{
 						state = LS.Globals.LISTENING;
-
-						LS.Globals.processMsg(JSON.stringify({control: state}), true);
+						counter = 0;
+						LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);
 					}
+				}
+				if(state == LS.Globals.LISTENING)
+					counter+=1;
+				if(counter>10800)
+				{
+					state = LS.Globals.WAITING;
+					LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);
+					counter = 0;
 				}
 			}
 		}
-		if(state == 0)
-			counter++;
-		if(counter>5000)
-		{
-			state = LS.Globals.WAITING;
-			LS.Globals.processMsg(JSON.stringify({control: LS.Globals.WAITING}), true);
-			counter = 0;
-		}
+		
 		window.requestAnimationFrame(this.appLoop.bind(this));
 
 	},
@@ -237,11 +239,13 @@ var CORE = {
 	},
 	onConnectionError: function(server, error)
 	{
+		var that = this;
 		console.log(error)
 		this.isFirstMsg = true;
 		this.start = false;
+		if(that.start_recognition) recognition.stop()
 		this.displayModal(true, "Connection error. Trying to reconnect.");
-		var that = this;
+		
 		
 		setTimeout(function(){
 			var protocol = location.protocol == "https:" ? "wss://" : "ws:";
@@ -276,15 +280,21 @@ var CORE = {
 			if(msg.type=="system")
 				return;
 			var LS = window.LS;
-			state = LS.Globals.SPEAKING;
+			//state = LS.Globals.SPEAKING;
 			//isSpeaking = true
-			if(msg.content.text.includes("name and surname"))
+			if(msg.type == "request")
 			{
-				
-				this.tabRemote.sendMessage({type:"request_data", data: "person"});
-				
-				if(start_recognition){ recognition.stop()}
-				recognition_enabled = false;
+				if(this.isFirstMsg && msg.content!="")
+				{
+					this.isFirstMsg = false;
+					//obj["gesture"] = {lexeme:"wave"};
+				}
+				/*else{
+	
+					if(Math.random()<0.5)
+						obj.data.push({type:"gesture",lexeme:"speaking", start:0, end:2});
+				}*/
+		
 			}
 			var obj = {type: "behaviours", data : []};
 			if(msg.content && msg.content.data)
@@ -305,31 +315,27 @@ var CORE = {
 				obj.data= [ { type:"lg", text: msg.content.text, audio: msg.content.data.audio, start:0.1, end:4 }]; //speaking
 			else
 				obj = { type: "behaviours", data: [ { type:"lg", text: msg.content.text,  start:0.1, end:4 }]};
-			if(msg.content.text.includes("Hi"))
-				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.5,start:0, end:0.5 })
-			//show on console
-			if(msg.type == "request")
+			if(msg.content && msg.content.text.includes("Hi"))
+				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.2, start: 0.1, attackPeak: 0.3, relax: 0.4, end: 1.1})
+			if(msg.content&& msg.content.text.includes("name and surname"))
 			{
-				if(this.isFirstMsg && msg.content!="")
-				{
-					this.isFirstMsg = false;
-					//obj["gesture"] = {lexeme:"wave"};
-				}
-				/*else{
-	
-					if(Math.random()<0.5)
-						obj.data.push({type:"gesture",lexeme:"speaking", start:0, end:2});
-				}*/
-		
+				
+				this.tabRemote.sendMessage({type:"request_data", data: "person"});
+				
+				if(this.start_recognition){ recognition.stop()}
+				recognition_enabled = false;
 			}
+			
+			
 	
 			if(msg.content.text == "See you next time, bye.")
 			{
 				this.isFirstMsg = true;
 				this.start = false;
 				recognition_enabled = false
-				if(start_recognition) recognition.stop();
+				if(this.start_recognition) recognition.stop();
 				this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
+				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.5, start: 2.6, attackPeak: 2.8, relax: 3.2, end: 4})
 			}
 	
 			console.log("message processed: " + msg.content)
@@ -340,41 +346,41 @@ var CORE = {
 			var LS = window.LS;
 	
 			var places = ["cafeteria", "bar", "library", "auditori","auditorium", "restaurant", "secretaria", "library", "550" ,"551", "552", "553","554"];
-	
-			for(var i in places)
-			{
-				var place = places[i];
-	
-				if(msg.content.text.toLowerCase().includes(place))
+			if(msg.content)
+				for(var i in places)
 				{
-	
-					//if(Math.random()<0.5)
-					/*obj.data.push({type:"gesture",lexeme:"show", start:0, ready:1, strokeStart:1.5, end:3});*/
-					if(place=="secretaria")
-						place="550";
-					if(place=="auditorium")
-						place="auditori"
-					if(place == "bar" || place == "restaurant")	  //hardcoded
-						place = "cafeteria";
-	
-					var path = "https://dtic-recepcionist.upf.edu/recepcionista/imgs/mapa-"+ place + ".jpg";
-					var LSQ = window.LSQ;
-					LS.RM.load(path);
-					var map = LSQ.get("map");
-					var woman = LSQ.get("background");
-					if(map && woman)
+					var place = places[i];
+		
+					if(msg.content.text.toLowerCase().includes(place))
 					{
-						map.material.textures.color.texture = path;
-						var mapPos = map.transform.position.clone();
-						var mapTarget = LSQ.get("mapTarget").transform.position;
-						LS.Tween.easeProperty( map.transform, "position", mapTarget, 1)
-						setTimeout(function(){LS.Tween.easeProperty(map.transform, "position", mapPos, 1)}	, 8000)
-		/*				var cameraPos = LS.GlobalScene.root.camera.center.clone();
-						LS.Tween.easeProperty( LS.GlobalScene.root.camera, "center", map.transform.position, 3 )
-						setTimeout(function(){LS.Tween.easeProperty( LS.GlobalScene.root.camera, "center", cameraPos, 3 )}	, 8000)*/
+		
+						//if(Math.random()<0.5)
+						/*obj.data.push({type:"gesture",lexeme:"show", start:0, ready:1, strokeStart:1.5, end:3});*/
+						if(place=="secretaria")
+							place="550";
+						if(place=="auditorium")
+							place="auditori"
+						if(place == "bar" || place == "restaurant")	  //hardcoded
+							place = "cafeteria";
+		
+						var path = "https://dtic-recepcionist.upf.edu/recepcionista/imgs/mapa-"+ place + ".jpg";
+						var LSQ = window.LSQ;
+						LS.RM.load(path);
+						var map = LSQ.get("map");
+						var woman = LSQ.get("background");
+						if(map)
+						{
+							map.material.textures.color.texture = path;
+							var mapPos = map.transform.position.clone();
+							var mapTarget = LSQ.get("mapTarget").transform.position;
+							LS.Tween.easeProperty( map.transform, "position", mapTarget, 1)
+							setTimeout(function(){LS.Tween.easeProperty(map.transform, "position", mapPos, 1)}	, 8000)
+			/*				var cameraPos = LS.GlobalScene.root.camera.center.clone();
+							LS.Tween.easeProperty( LS.GlobalScene.root.camera, "center", map.transform.position, 3 )
+							setTimeout(function(){LS.Tween.easeProperty( LS.GlobalScene.root.camera, "center", cameraPos, 3 )}	, 8000)*/
+						}
 					}
 				}
-			}
 	
 			LS.Globals.processMsg(JSON.stringify(obj), true);
 		/*}*/
@@ -429,7 +435,7 @@ var CORE = {
 						this.mindRemote.sendMessage( {type:"end", content:""} );
 						this.isFirstMsg = true;
 						this.start = false;
-						if(start_recognition) recognition.stop()
+						if(this.start_recognition) recognition.stop()
 					}
 					break;
 			}

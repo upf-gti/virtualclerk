@@ -160,11 +160,7 @@ LS.Globals.processMsg = function(data, fromWS) {
       
       if(data[i].type == "info")
         continue;
-      else if ((data[i].type == "speech" || data[i].type == "lg") && LS.Globals.BehaviorPlanner)
-      {
-        LS.Globals.BehaviorPlanner.transition({control:LS.Globals.SPEAKING})
-        msg.composition = "MERGE"
-      }
+
       if(!data[i].end &&data[i].duration)
       {
         data[i].end = data[i].start+data[i].duration;
@@ -190,9 +186,16 @@ LS.Globals.processMsg = function(data, fromWS) {
       	msg[data[i].type] = data[i];
       //msg = data[i];
      // LS.Globals.BehaviorManager.newBlock(msg);
-     if(data[i].end > end) end = data[i].end;
+      if(data[i].end > end) end = data[i].end;
       if(data[i].start < start) start = data[i].start;
+      if ((data[i].type == "speech" || data[i].type == "lg") && LS.Globals.BehaviorPlanner)
+      {
+        msg.control=LS.Globals.SPEAKING
+        LS.Globals.BehaviorPlanner.transition(msg)
+        msg.composition = "MERGE"
+      }
     }
+    
     msg.start = start;
     msg.end = end;
     
@@ -204,9 +207,14 @@ LS.Globals.processMsg = function(data, fromWS) {
     msg = data;
     if(data.type == "state" || data.type == "control")
     {
-      msg.control = LS.Globals[data.parameters.state.toUpperCase()];
+      if(data.parameters)
+        msg.control = LS.Globals[data.parameters.state.toUpperCase()];
       LS.Globals.BehaviorPlanner.transition(msg)
-      return;
+      
+    }else if( data.type == "lg" ||data.type == "speech"){
+      msg.control = LS.Globals.SPEAKING
+      LS.Globals.BehaviorPlanner.transition(msg)
+     
     }
     else if(data.type == "info")
         return;
@@ -263,10 +271,10 @@ LS.Globals.processMsg = function(data, fromWS) {
   // Create new bml if necessary
   if (LS.Globals.BehaviorPlanner)
   {
-
+    
     //LS.Globals.BehaviorPlanner.newBlock(msg);
-    if(msg.speech || msg.lg)
-      LS.Globals.BehaviorPlanner.transition({control:LS.Globals.SPEAKING})
+    /*if(msg.speech || msg.lg)
+      LS.Globals.BehaviorPlanner.transition({control:LS.Globals.SPEAKING})*/
       //LS.Globals.processMsg(JSON.stringify({control:LS.Globals.SPEAKING}));
       }
   if (!msg) {
