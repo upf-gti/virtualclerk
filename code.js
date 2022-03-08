@@ -312,11 +312,11 @@ var CORE = {
 
 				}
 				else
-				obj.data= [ { type:"lg", text: msg.content.text, audio: msg.content.data.audio, start:0.1, end:4 }]; //speaking
+				obj.data= [ { type:"lg", text: msg.content.text, audio: msg.content.data.audio, start:0, end:4 }]; //speaking
 			else
 				obj = { type: "behaviours", data: [ { type:"lg", text: msg.content.text,  start:0.1, end:4 }]};
 			if(msg.content && msg.content.text.includes("Hi"))
-				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.2, start: 0.1, attackPeak: 0.3, relax: 0.4, end: 1.1})
+				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.3, start: 0.2, attackPeak: 0.3, relax: 0.4, end: 1.1})
 			if(msg.content&& msg.content.text.includes("name and surname"))
 			{
 				
@@ -335,9 +335,12 @@ var CORE = {
 				recognition_enabled = false
 				if(this.start_recognition) recognition.stop();
 				this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
-				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.5, start: 2.6, attackPeak: 2.8, relax: 3.2, end: 4})
+				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.3, start: 1.6, attackPeak: 1.8, relax: 2.8, end: 4})
 			}
-	
+			else if(msg.content.text.includes("Sorry")){
+				obj.data.push({type:"faceEmotion", emotion: "SURPRISE", amount:0.3, start: 0, attackPeak: 0.2, relax: 0.6, end: 1})
+				
+			}
 			console.log("message processed: " + msg.content)
 	
 					//show on character
@@ -416,6 +419,7 @@ var CORE = {
 					{
 						//start_conversation
 						this.start = true;
+						this.appLoop()
 					}
 					if(json.action == "mute")
 					{

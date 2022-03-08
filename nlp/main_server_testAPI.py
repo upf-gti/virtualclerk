@@ -309,49 +309,64 @@ async def handle_place(data_places, floors, nlp, websocket):
             place_idx = np.where(data_places[:, 1] == building_code[1])
             building = data_places[place_idx, 0][0][0]
             floor = int(room_number[0])
-            
-            r = requests.get(api_path+'phrases/phrase', params={'text': 'That room is located in the'})
-            if r.status_code == 200 and len(r.json()):
-                data = r.json()[0]
-            else: 
-                data = None
-            audios.append(data)
 
             if building_code in ("52", "55"):
-                message = (f"That room is located in the {building} building in the {floors[floor]} floor."
-                           " I attach here a map.")
-                
-                r = requests.get(api_path+'places/place', params={'name': building})
-                if r.status_code == 200 and len(r.json()):
-                    data = r.json()[0]
-                else: 
-                    data = None
-                audios.append(data)
+                if floor == 0: 
+                    message = ("That room is located on this floor. You just need to go to the corridor and you will find it.")
+                    r = requests.get(api_path+'phrases/phrase', params={'text': message})
+                    if r.status_code == 200 and len(r.json()):
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    audios.append(data)
+                else:
+                    r = requests.get(api_path+'phrases/phrase', params={'text': 'That room is located in the'})
+                    if r.status_code == 200 and len(r.json()):
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    audios.append(data)
 
-                r = requests.get(api_path+'phrases/phrase', params={'text': 'building in the'})
-                if r.status_code == 200 and len(r.json()):
-                    data = r.json()[0]
-                else: 
-                    data = None
-                audios.append(data)
+                    message = ("That room is located in the {building} building in the {floors[floor]} floor."
+                            " I attach here a map.")
+                    
+                    r = requests.get(api_path+'places/place', params={'name': building})
+                    if r.status_code == 200 and len(r.json()):
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    audios.append(data)
 
-                r = requests.get(api_path+'places/place', params={'name': floors[floor]})
-                if r.status_code == 200 and len(r.json()):
-                    data = r.json()[0]
-                else: 
-                    data = None
-                audios.append(data)
+                    r = requests.get(api_path+'phrases/phrase', params={'text': 'building in the'})
+                    if r.status_code == 200 and len(r.json()):
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    audios.append(data)
 
-                r = requests.get(api_path+'phrases/phrase', params={'text': 'floor. I attach here a map.'})
-                if r.status_code == 200 and len(r.json()):
-                    data = r.json()[0]
-                else: 
-                    data = None
-                audios.append(data)
+                    r = requests.get(api_path+'places/place', params={'name': floors[floor]})
+                    if r.status_code == 200 and len(r.json()):
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    audios.append(data)
+
+                    r = requests.get(api_path+'phrases/phrase', params={'text': 'floor. I attach here a map.'})
+                    if r.status_code == 200 and len(r.json()):
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    audios.append(data)
             #getAudioPhrase + getAudioBuilding + getAudioPhrase + getAudioFloor + getAudioPhrase                         
             else:
-                message = (f"That room is located in the {building} building."
+                message = ("That room is located in the {building} building."
                            " I attach here a map.")
+                r = requests.get(api_path+'phrases/phrase', params={'text': 'That room is located in the'})
+                if r.status_code == 200 and len(r.json()):
+                    data = r.json()[0]
+                else: 
+                    data = None
+                audios.append(data)
 
                 r = requests.get(api_path+'places/place', params={'name': building})
                 if r.status_code == 200 and len(r.json()):
@@ -456,8 +471,8 @@ async def agent(websocket, path):
 
     person_keywords = ['person', 'researcher', 'employee', 'people', 'member']  # keywords for person path
     group_keywords = ['group', 'organization', 'research group']  # keywords for group path
-    place_keywords = ['place', 'location', 'localization', 'room']  # keywords for place path
-
+    place_keywords = ['place', 'location', 'localization', 'room', 'office']  # keywords for place path
+    nothing_keywords = ['nothing', 'anything', 'no']
     floors = {
         1: 'first',
         2: 'second',
@@ -522,7 +537,25 @@ async def agent(websocket, path):
                 elif target in place_keywords:
                     #data_places = getGroupNames()
                     res = await handle_place(data_places, floors, nlp, websocket)
+                elif target in nothing_keywords:
+                    conversation = False
+                    message = 'See you next time, bye.'
+                    #getAudioPhrase
+                    request['type'] = 'request'
 
+                    r = requests.get(api_path+'phrases/phrase', params={'text': message})
+                    if r.json()[0]:
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    request['content'] = {'text': message, 'data': data}
+                   ## request_json = encode(message, 'request')
+                    #request_json = encode(request, 'request')
+                    request_json = json.dumps(request)
+                    await websocket.send(request_json)
+                    request_json = encode('', 'end')
+                    await websocket.send(request_json)
+                    continue
                 else:
                     response = await handle_not_understood(request, websocket)
                     continue
