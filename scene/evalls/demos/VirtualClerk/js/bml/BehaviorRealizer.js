@@ -296,7 +296,8 @@ FacialExpr.prototype.initFaceValAro = function(faceData, shift){
   // Sync
   this.start = faceData.start || 0.0;
   this.end = faceData.end;
-  
+  this.amount = faceData.amount || 1.0;
+
   if (!shift){
     this.attackPeak = faceData.attackPeak || (this.end-this.start)*0.25 + this.start;
     this.relax = faceData.relax || (this.end - this.attackPeak)/2 + this.attackPeak;
@@ -717,7 +718,7 @@ FacialExpr.prototype.VA2BSW = function(valAro, facialBSW){
   {	
     weights[i] /= total_inside;	
     for (var j = 0; j < blendValues.length; j++){	
-      blendValues[j] += this._pit[i][j+2] * weights[i];	
+      blendValues[j] += this._pit[i][j+2] * weights[i]*this.amount;	
     }	
     //this.weights_obj[ this.points[i].name ] = weights[i];	
   }	
