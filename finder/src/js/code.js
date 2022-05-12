@@ -285,21 +285,30 @@ function setEvents()
     });
 
     document.getElementById("accept-terms").addEventListener("click", function() {
-        window.start = true;
-        var bkg = document.getElementById("dark-bkg")
-        bkg.style.display = "none"
-        var elem = document.getElementById("legalterms")
-        elem.style.display = "none"
-        document.getElementById("play-btn").classList.remove("w3-red-color")
-        document.getElementById("play-btn").classList.add("w3-gray-color")
-        // send start conversation "event" to the server
-        var init_message = {type:"tab_action", action:"initialize", time:timestamp}
-        ws.send(JSON.stringify(init_message));
-        /*else
+        var age   = document.querySelector("#age").checked;       
+        var gapi1 = document.querySelector("#gapi1").checked;
+        var gapi2 = document.querySelector("#gapi2").checked;
+        if(age&&gapi1&&gapi2)
         {
-            alert('Implement sendInfo() method, and send: ' + input)
-
-        }*/
+            window.start = true;
+            var bkg = document.getElementById("dark-bkg")
+            bkg.style.display = "none"
+            var elem = document.getElementById("legalterms")
+            elem.style.display = "none"
+            document.getElementById("play-btn").classList.remove("w3-red-color")
+            document.getElementById("play-btn").classList.add("w3-gray-color")
+            // send start conversation "event" to the server
+            var init_message = {type:"tab_action", action:"initialize", time:timestamp}
+            ws.send(JSON.stringify(init_message));
+            document.querySelector("#age").checked = false;       
+            document.querySelector("#gapi1").checked = false;
+            document.querySelector("#gapi2").checked = false;
+            /*else
+            {
+                alert('Implement sendInfo() method, and send: ' + input)
+            
+            }*/
+        }
     });
 
     document.getElementById("cancel-terms").addEventListener("click", function() {
@@ -351,12 +360,17 @@ function setEvents()
 function changeWaitingView()
 {
     var div = document.getElementById("waiting-container");
+    var where = document.getElementById("where-form");
+            
     if(div.style.visibility == "hidden")
     {
         div.style.visibility = "visible";
+        where.style.visibility = "hidden";
     }
-    else
+    else{
         div.style.visibility = "hidden";
+        where.style.visibility = "visible";
+    }
 }
 function resetView()
 {

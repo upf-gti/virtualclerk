@@ -8,8 +8,8 @@ recognition.maxAlternatives = 1;
 var final_transcript = "";
 
 
-var state = 2; //WAITING
-var counter = 0;
+var state = 0; //WAITING
+var lastState = state;
 
 var mute = true;
 var recognition_enabled = false;
@@ -38,26 +38,27 @@ var CORE = {
 		
 		player.loadScene("scene/scene.json", function(){this.globals = window}.bind(this));
 		//document.querySelector("#character").appendChild( player.canvas )
-		window.onmessage = this.appLoop.bind(this)
+		//window.onmessage = this.appLoop.bind(this)
 
 		//-------------------------------------------------------Recognition Events
 		recognition.onstart = function(event){
 			that.start_recognition = true;
 			console.log("Recognition Start");
+			if(that.tabRemote)
+					that.tabRemote.sendMessage({type: "app_action", action: "recognition_start" })
 		
 		}
-
 		recognition.onaudiostart = function()
 		{
 			var that = this;
-			if(that.tabRemote)
-				that.tabRemote.sendMessage({type: "app_action", action: "recognition_start" })
+			/*if(that.tabRemote)
+				that.tabRemote.sendMessage({type: "app_action", action: "recognition_start" })*/
 		}.bind(this)
 		recognition.onaudioend = function()
 		{
 			var that = this;
-			if(that.tabRemote)
-				that.tabRemote.sendMessage({type: "app_action", action: "recognition_end" })
+			// if(that.tabRemote)
+			// 	that.tabRemote.sendMessage({type: "app_action", action: "recognition_end" })
 		}.bind(this)
 
 		recognition.onspeechstart = function(){
@@ -93,6 +94,8 @@ var CORE = {
 		recognition.onend = function(event){
 			console.log("Recognition stopped from recognition.onend()");
 			that.start_recognition = false;
+			if(that.tabRemote)
+				that.tabRemote.sendMessage({type: "app_action", action: "recognition_end" })
 
 		}
 		recognition.onresult = function(event) {
@@ -175,17 +178,16 @@ var CORE = {
 	},
 	appLoop: function(dt)
 	{
-
 		if(window && this.start)
 		{
-			if(this.isFirstMsg)
+			if(this.isFirstMsg && !recognition_enabled)
 			{
 				if(!this.mindRemote.sendMessage( {type:"start", content:""} )){
 					this.onConnectionError("nlp");
 					return;
 				}
 					
-				this.isFirstMsg = false;
+				//this.isFirstMsg = false;
 				recognition_enabled = true;
 				mute = false;
 				//if(start_recognition) recognition.stop()
@@ -194,17 +196,17 @@ var CORE = {
 			}
 			var LS = window.LS;
 			if(LS.Globals){
-
 				var isSpeaking = LS.Globals.speaking;
-		
+				if(isSpeaking) state = LS.Globals.SPEAKING;
 				if(isSpeaking&&this.start_recognition)
 				{
 					recognition.stop();
 					state = LS.Globals.PROCESSING
+					recognition_enabled = true
 					//LS.Globals.processMsg(JSON.stringify({type:'control', control: state}), true);
-					
+					this.isFirstMsg = false;
 				}
-				else if(!isSpeaking&&!this.start_recognition&&!mute && recognition_enabled)
+				else if(!this.isFirstMsg&&!isSpeaking&&!this.start_recognition&&!mute && recognition_enabled)
 				{
 					recognition.start();
 					if(state==LS.Globals.SPEAKING)
@@ -222,11 +224,13 @@ var CORE = {
 					LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);
 					counter = 0;
 				}
+			if(lastState != state && state == LS.Globals.SPEAKING) this.isFirstMsg = false;
+			lastState = state;
 			}
+			
 		}
 		
 		window.requestAnimationFrame(this.appLoop.bind(this));
-
 	},
 	onConnectionStarted: function(data)
 	{
@@ -284,11 +288,11 @@ var CORE = {
 			//isSpeaking = true
 			if(msg.type == "request")
 			{
-				if(this.isFirstMsg && msg.content!="")
+				/*if(this.isFirstMsg && msg.content!="")
 				{
 					this.isFirstMsg = false;
 					//obj["gesture"] = {lexeme:"wave"};
-				}
+				}*/
 				/*else{
 	
 					if(Math.random()<0.5)
@@ -333,11 +337,12 @@ var CORE = {
 				this.isFirstMsg = true;
 				this.start = false;
 				recognition_enabled = false
+				state = LS.Globals.WAITING;
 				if(this.start_recognition) recognition.stop();
 				this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
 				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.3, start: 1.6, attackPeak: 1.8, relax: 2.8, end: 4})
 			}
-			else if(msg.content.text.includes("Sorry")){
+			else if(msg.content.text &&msg.content.text.includes("Sorry")){
 				obj.data.push({type:"faceEmotion", emotion: "SURPRISE", amount:0.3, start: 0, attackPeak: 0.2, relax: 0.6, end: 1})
 				
 			}
@@ -439,8 +444,8 @@ var CORE = {
 						this.mindRemote.sendMessage( {type:"end", content:""} );
 						this.isFirstMsg = true;
 						this.start = false;
-						if(this.start_recognition) recognition.stop()
-					}
+						//if(this.start_recognition) recognition.stop()
+						recognition.stop()					}
 					break;
 			}
 		}

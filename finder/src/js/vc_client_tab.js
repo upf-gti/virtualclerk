@@ -1,4 +1,6 @@
 var connected_to_session = false;
+var questionnaire_active = false;
+
 function init_websocket () {
   // if user is running mozilla then use it's built-in WebSocket
   window.WebSocket = window.WebSocket || window.MozWebSocket;
@@ -48,7 +50,9 @@ function init_websocket () {
             var speech_btn = document.getElementById("speech-btn");
             speech_btn.style.visibility = "hidden";
             var cnt = document.getElementById("buttons-container");
-            cnt.style.display ='None'; 
+            cnt.style.display ='None';
+            var where = document.getElementById("where-form");
+            where.style.visibility = "visible"; 
 
           break;
 
@@ -63,6 +67,7 @@ function init_websocket () {
         case "app_action":
           if(json.action == "end_conversation")
           {
+            showQuestionnaire();
             var btn = document.getElementById("play-btn");
             if(btn.classList.contains("w3-gray-color"))
             {
@@ -72,6 +77,8 @@ function init_websocket () {
             btn.style.visibility = "visible";
             var waiting_cnt = document.getElementById("waiting-container")
             waiting_cnt.style.visibility = "visible";
+            var where = document.getElementById("where-form");
+            where.style.visibility = "hidden";
           }
 
           if(json.action == "mute_toggled")
@@ -164,6 +171,9 @@ function init_websocket () {
             btn.style.visibility = "visible";
             var waiting_cnt = document.getElementById("waiting-container")
             waiting_cnt.style.visibility = "visible";
+            var where = document.getElementById("where-form");
+            where.style.visibility = "hidden";
+            
             document.getElementById('session').style.display = "block"
 
             var btnM = document.getElementById("mute-btn");
@@ -194,8 +204,26 @@ var minutes = (date.getMinutes()>9)? date.getMinutes(): "0"+date.getMinutes();
 var seconds = (date.getSeconds()>9) ? date.getSeconds(): "0"+date.getSeconds();
 var timestamp = hours+ ":"+ minutes+":"+seconds;
 
-
-
+function showQuestionnaire(){
+  questionnaire_active = true;
+  var q = document.getElementById("questionnaire");
+  q.children[0].src = "https://docs.google.com/forms/d/e/1FAIpQLSc_fWSRn40zUxBiV9kaHPWm7eFJ585Tp1N75BR50yf9X7nfrw/viewform?embedded=true";
+}
+function onLoad(v, t=1000){
+  questionnaire_active = !questionnaire_active;
+  if(!v){
+    setTimeout(function(){
+      var q = document.getElementById("questionnaire");
+      q.style.visibility = "hidden";
+    }, t)
+  }else{
+    
+      document.getElementById("questionnaire").style.visibility = "visible"
+    }
+}
+function goBack(){
+  onLoad(questionnaire_active,0)
+}
 // send from tablet
 // init
 // person -> after that show "waiting-container" and play-btn with class w3-gray

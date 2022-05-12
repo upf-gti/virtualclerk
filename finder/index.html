@@ -3,16 +3,18 @@
 <title>Receptionist: Find info </title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="./src/css/libs/w3.css">
+<link rel="stylesheet" href="./src/css/libs/font-awesome-4.7.0/css/font-awesome.min.css">
 <link rel="stylesheet" href="src/css/style.css">
 <style>
 body, html {
   height: 100%;
   font-family: "Inconsolata", sans-serif;
+  font-size: 25px;
 }
-
+* {
+        margin: 0;
+  }
 /* .bgimg {
   background-position: center;
   background-size: cover;
@@ -56,11 +58,11 @@ body, html {
     <!-- <span class="w3-text-white">H2020 - PRESENT</span> -->
   <!-- </div> -->
 <!-- </header> -->
-<div class="w3-container" id="where" style="padding-bottom:32px;">
-    
-    <div id='waiting-container'>Please, interact with Eva</div>
 
-    <div class="w3-content" style="max-width:700px">
+<div class="w3-container" id="where" style="padding-bottom:32px; width:calc(100% - 30px); position:absolute;">
+    
+  <div id='waiting-container'>Please, interact with Eva</div>
+  <div id="where-form" class="w3-content" style="visibility:hidden">
     <h5 class="w3-center w3-padding-48"><span class="w3-tag w3-wide">Who are you looking for?</span></h5>
     <!--Make sure the form has the autocomplete function switched off:-->
         <!-- <form autocomplete="off" action="/action_page.php">
@@ -87,7 +89,7 @@ body, html {
   </div>
   <!--<button id="play-btn" class="w3-button w3-circle w3-big-button"><i id="play-btn" class="fa fa-play-circle w3-red-color" style="font-size:400px;"></i></button>-->
   <div id='buttons-container' class="w3-big-button">
-    <i id="play-btn" class="fa fa-play-circle w3-red-color absolut" style="font-size:400px;visibility:visible"></i>
+    <i id="play-btn" class="fa fa-play-circle w3-red-color absolut" style="font-size:400px;"></i>
     <i id="speech-btn" class="fa fa-microphone w3-red-color absolut" style="font-size:400px;visibility: hidden;"></i>
     <div id='mute-container'>
       <i id="mute-btn" class="fa fa-microphone-slash mute-button"></i>
@@ -105,25 +107,39 @@ body, html {
     <button id="btn-session">Connect</button>
   </div>
 </div>
-
+<div id="questionnaire">
+  <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSc_fWSRn40zUxBiV9kaHPWm7eFJ585Tp1N75BR50yf9X7nfrw/viewform?embedded=true" onload = "onLoad(questionnaire_active)" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">S&#39;està carregant…</iframe>
+  <button id="cancel-questionnaire" onclick="goBack()"><i class="fa fa-arrow-left fa-sm"></i> Return</button>
+</div>
 <div id="legalterms">
   <div id="legaltext">
-    <p>This experimental virtual avatar intends to help you find people, groups, or directions in this building. It is a beta version of a research collaboration between TALN and GTI groups from UPF (more information, in the text available next to the installation). For the proper performance of such experiment, Google speech to text software is being used; we keep a text log of the interaction, to improve the system. By clicking the Accept button, you agree with its usage, as well as with the usage of the system itself. Thanks!</p>
+    <p>Please, read the information on the Virtual Clerk next to the installation, where the different
+      actors and projects are indicated. For the proper performance of such experiment, Google
+      speech to text software is being used; we keep a text log of the interaction, to improve the
+      system. By clicking the Accept button, you agree with its usage, as well as with the usage of
+      the system itself. Thanks!</p>
+      <p> <input type="checkbox" name="age"> <b>I confirm I am above 14 years old.</b></p>
+      <p> <input type="checkbox" name="gapi1"><b> I consent for my voice recording to be transferred to Google for voice transcription
+      in the terms described by Google API Services User Data Policy.</b></p>
+      <p> <input type="checkbox" name="gapi2"><b> I give Google a perpetual license to use my voice recordings in the terms described
+      by Google APIs Terms of Service.</b></p>
   </div>
   <div id="terms-btns">
     <button id="cancel-terms">Cancel</button>
     <button id="accept-terms">Accept</button>
   </div>
 </div>
+
+
 <!-- Footer -->   
-<footer class="w3-center w3-light-grey w3-padding-48 w3-large">
+<i id="play-btn" class="fa fa-play-circle w3-red-color absolut" style="font-size:400px;"></i>
   <p>Beta version</p>
 </footer>
 
 <script  src="src/js/libs/xlsx.full.min.js"></script>
 <script	 src="src/js/vc_client_tab.js"></script>
 <script	 src="src/js/code.js"></script>
-<script  src="https://apis.google.com/js/api.js"></script>
+<!--<script  src="https://apis.google.com/js/api.js"></script>-->
 <script>
     initApp()
 </script>

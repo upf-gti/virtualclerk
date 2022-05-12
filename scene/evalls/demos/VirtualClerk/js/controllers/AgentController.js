@@ -188,12 +188,12 @@ LS.Globals.processMsg = function(data, fromWS) {
      // LS.Globals.BehaviorManager.newBlock(msg);
       if(data[i].end > end) end = data[i].end;
       if(data[i].start < start) start = data[i].start;
-      if ((data[i].type == "speech" || data[i].type == "lg") && LS.Globals.BehaviorPlanner)
+      /*if ((data[i].type == "speech" || data[i].type == "lg") && LS.Globals.BehaviorPlanner)
       {
         msg.control=LS.Globals.SPEAKING
         LS.Globals.BehaviorPlanner.transition(msg)
         msg.composition = "MERGE"
-      }
+      }*/
     }
     
     msg.start = start;
@@ -208,14 +208,18 @@ LS.Globals.processMsg = function(data, fromWS) {
     if(data.type == "state" || data.type == "control")
     {
       if(data.parameters)
+      {
         msg.control = LS.Globals[data.parameters.state.toUpperCase()];
-      LS.Globals.BehaviorPlanner.transition(msg)
+        LS.Globals.BehaviorPlanner.transition(msg);
+        returnM
+      }
       
-    }else if( data.type == "lg" ||data.type == "speech"){
+    }/*else if( data.type == "lg" ||data.type == "speech"){
       msg.control = LS.Globals.SPEAKING
       LS.Globals.BehaviorPlanner.transition(msg)
+      return;
      
-    }
+    }*/
     else if(data.type == "info")
         return;
     LS.Globals.BehaviorManager.newBlock(msg);
@@ -273,8 +277,8 @@ LS.Globals.processMsg = function(data, fromWS) {
   {
     
     //LS.Globals.BehaviorPlanner.newBlock(msg);
-    /*if(msg.speech || msg.lg)
-      LS.Globals.BehaviorPlanner.transition({control:LS.Globals.SPEAKING})*/
+    if(msg.speech || msg.lg)
+      LS.Globals.BehaviorPlanner.transition({control:LS.Globals.SPEAKING})
       //LS.Globals.processMsg(JSON.stringify({control:LS.Globals.SPEAKING}));
       }
   if (!msg) {
@@ -364,6 +368,11 @@ LS.Globals.processBML = function(key, bml) {
               bml.shift = false;
             thatFacial.newFA(bml, bml.shift);
             break;
+        case "faceVA":
+          if(bml.shift == undefined)
+            bml.shift = false;
+          thatFacial.newFA(bml, bml.shift);
+          break;
         case "faceShift":
             thatFacial.newFA(bml, true);
             break;

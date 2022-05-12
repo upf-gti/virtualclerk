@@ -28,7 +28,7 @@ Blink.prototype.update = function(dt){
   // Waiting to reach start
   if (this.time < this.start)
     return;
-  
+  var inter = 0;
   // Transition 1 (closing eyes)
   if (this.time < this.attackPeak){
     inter = (this.time-this.start)/(this.attackPeak-this.start);
@@ -515,11 +515,13 @@ FacialExpr.prototype.updateVABSW = function(interVABSW, dt){
     inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5;
     //inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5; // to increase curve, keep adding cosines
     // Interpolation
-    /*for (var i = 0; i < this.sceneBSW[FacialExpr.BODY_NAME].length; i++)
-      interVABSW[FacialExpr.BODY_NAME][i] = this.initialVABSW[FacialExpr.BODY_NAME][i]*(1-inter) + this.targetVABSW[FacialExpr.BODY_NAME][i]*inter;*/
-    for(var j in this.targetVABSW)	
-      interVABSW[FacialExpr.BODY_NAME][j] = this.initialVABSW[j]*(1-inter) + this.targetVABSW[j]*inter;
-    
+    	    /*for (var i = 0; i < this.indicesVA.length; i++)
+    {
+      for(var j = 0; j < this.indicesVA[i].length; j++)
+        interVABSW[FacialExpr.BODY_NAME][this.indicesVA[i][j]] = this.initialVABSW[i][j]*(1-inter) + this.targetVABSW[i][j]*inter;
+    }*/
+    for(var j in this.targetVABSW)
+        interVABSW[FacialExpr.BODY_NAME][j] = this.initialVABSW[j]*(1-inter) + this.targetVABSW[j]*inter;
   }
   
   // Trans 2
@@ -528,13 +530,14 @@ FacialExpr.prototype.updateVABSW = function(interVABSW, dt){
     // Cosine interpolation
     inter = Math.cos(Math.PI*inter)*0.5 + 0.5;
     // Interpolation
-    /*for (var i = 0; i < this.sceneBSW[FacialExpr.BODY_NAME].length; i++)
-      interVABSW[FacialExpr.BODY_NAME][i] = this.initialVABSW[FacialExpr.BODY_NAME][i]*(1-inter) + this.targetVABSW[FacialExpr.BODY_NAME][i]*inter;*/
-      for(var j in this.targetVABSW)	
-        interVABSW[FacialExpr.BODY_NAME][j] = this.initialVABSW[j]*(1-inter) + this.targetVABSW[j]*inter;	
-    
+    /*for (var i = 0; i < this.indicesVA.length; i++)
+    {
+      for(var j = 0; j < this.indicesVA[i].length; j++)
+        interVABSW[FacialExpr.BODY_NAME][this.indicesVA[i][j]] = this.initialVABSW[i][j]*(1-inter) + this.targetVABSW[i][j]*inter;
+    }*/
+    for(var j in this.targetVABSW)
+        interVABSW[FacialExpr.BODY_NAME][j] = this.initialVABSW[j]*(1-inter) + this.targetVABSW[j]*inter;
   }
-  
   
   // End
   if (this.time > this.end)
@@ -855,6 +858,7 @@ GazeManager.prototype.update = function(dt){
       	this.gazeActions[i].update(dt, eyes);//update eyelids weight!!!!!!!!!!
         var eyelidsW = this.gazeActions[i].eyelidsW;
         var squintW = this.gazeActions[i].squintW;
+        var blinkW = this.gazeActions[i].blinkW;
       }
     }
 	}
@@ -906,6 +910,10 @@ Gaze.prototype.initGazeData = function(gazeData, shift){
   this.eyelidsInitW = gazeData.eyelidsWeight|| 0;
   this.squintW = gazeData.squintWeight|| 0;
   this.squintInitW = gazeData.squintWeight|| 0;
+  this.squintFinW = gazeData.squintWeight|| 0;
+  this.blinkW = gazeData.eyelidsWeight|| 0;
+  this.blinkInitW = gazeData.eyelidsWeight|| 0;
+  this.blinkFinW = gazeData.eyelidsWeight|| 0;
   // Sync
   this.start = gazeData.start || 0.0;
   this.end = gazeData.end || 2.0;
@@ -1061,82 +1069,91 @@ Gaze.prototype.initGazeValues = function(isEyes){
   // Move to origin
   v = this._tempV;
   q = this._tempQ;
-  var initP = vec3.create();
+  /*var initP = vec3.create();
   vec3.copy(initP, this.headPos);
   if(isEyes)
-    initP[1]-=3;
-  vec3.subtract(v, this.targetP, this.headPos);
-  magn = vec3.length(v);
-  vec3.normalize(v,v);
+    initP[1]-=3;*/
 
+  vec3.subtract(v, this.targetP, this.headPos);	
+  magn = vec3.length(v);	
+  vec3.normalize(v,v);	
   this.eyelidsFinW = this.gazeBS[this.target].eyelids;	
-  this.squintFinW = this.gazeBS[this.target].squint;
-
-  // Rotate vector and reposition
-  switch (this.offsetDirection){
-    case "UPRIGHT":
-      quat.setAxisAngle(q, v, -25*DEG2RAD);//quat.setAxisAngle(q, v, -45*DEG2RAD);
-      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);
-      vec3.transformQuat(v,v,q);
-      if(isEyes)
-      {
-        this.squintFinW*=Math.abs(this.offsetAngle/30)
-      }
-      break;
-    case "UPLEFT":
-      quat.setAxisAngle(q, v, -75*DEG2RAD);//quat.setAxisAngle(q, v, -135*DEG2RAD);
-      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);
-      vec3.transformQuat(v,v,q);
-      if(isEyes)
-      {
-        this.squintFinW*=Math.abs(this.offsetAngle/30)
-      }
-      break;
-    case "DOWNRIGHT":
-      quat.setAxisAngle(q, v, 25*DEG2RAD);//quat.setAxisAngle(q, v, 45*DEG2RAD);
-      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);
-      vec3.transformQuat(v,v,q);
-      if(isEyes)
-      {
-        this.squintFinW*=Math.abs(this.offsetAngle/30)
-      }
-      
-      break;
-    case "DOWNLEFT":
-      quat.setAxisAngle(q, v, 75*DEG2RAD);//quat.setAxisAngle(q, v, 135*DEG2RAD);
-      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);
-      vec3.transformQuat(v,v,q);
-      if(isEyes)
-      {
-        this.squintFinW*=Math.abs(this.offsetAngle/30)
-      }
-      break; 
-    case "RIGHT":
-      vec3.rotateY(v,v,this.offsetAngle*DEG2RAD);
-
-      break;
-    case "LEFT":
-      vec3.rotateY(v,v,-this.offsetAngle*DEG2RAD);
-
-      break;
-    case "UP":
-      quat.setAxisAngle(q, v, -45*DEG2RAD);//quat.setAxisAngle(q, v, -90*DEG2RAD);
-      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);
-      vec3.transformQuat(v,v,q);
-      if(isEyes)
-      {
-        this.squintFinW*=Math.abs(this.offsetAngle/30)
-      }
-      break;
-    case "DOWN":
-      quat.setAxisAngle(q, v, 45*DEG2RAD);//quat.setAxisAngle(q, v, 90*DEG2RAD);
-      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);
-      vec3.transformQuat(v,v,q);
-      if(isEyes)
-      {
-        this.eyelidsFinW*=Math.abs(this.offsetAngle/30)
-      }
-      break;
+  this.squintFinW = this.gazeBS[this.target].squint;	
+  // Rotate vector and reposition	
+  switch (this.offsetDirection){	
+    case "UPRIGHT":	
+      quat.setAxisAngle(q, v, -25*DEG2RAD);//quat.setAxisAngle(q, v, -45*DEG2RAD);	
+      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);	
+      vec3.transformQuat(v,v,q);	
+      if(isEyes)	
+      {	
+      	this.squintFinW*=Math.abs(this.offsetAngle/30)	
+      }	
+      break;	
+    case "UPLEFT":	
+      quat.setAxisAngle(q, v, -75*DEG2RAD);//quat.setAxisAngle(q, v, -135*DEG2RAD);	
+      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);	
+      vec3.transformQuat(v,v,q);	
+      if(isEyes)	
+      {	
+        this.squintFinW*=Math.abs(this.offsetAngle/30)	
+      }	
+      break;	
+    case "DOWNRIGHT":	
+      quat.setAxisAngle(q, v, 25*DEG2RAD);//quat.setAxisAngle(q, v, 45*DEG2RAD);	
+      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);	
+      vec3.transformQuat(v,v,q);	
+      if(isEyes)	
+      {	
+        this.eyelidsFinW*=Math.abs(this.offsetAngle/30)	
+      }	
+      	
+      break;	
+    case "DOWNLEFT":	
+      quat.setAxisAngle(q, v, 75*DEG2RAD);//quat.setAxisAngle(q, v, 135*DEG2RAD);	
+      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);	
+      vec3.transformQuat(v,v,q);	
+      if(isEyes)	
+      {	
+        this.eyelidsFinW*=Math.abs(this.offsetAngle/30)	
+      }	
+      break; 	
+    case "RIGHT":	
+      vec3.rotateY(v,v,this.offsetAngle*DEG2RAD);	
+      /*if(isEyes)	
+      {	
+        this.eyelidsFinW = 0	
+        this.squintFinW = 0	
+      }*/	
+      break;	
+    case "LEFT":	
+      vec3.rotateY(v,v,-this.offsetAngle*DEG2RAD);	
+      /*if(isEyes)	
+      {	
+        this.eyelidsFinW = 0	
+        this.squintFinW = 0	
+      }*/	
+      break;	
+    case "UP":	
+      quat.setAxisAngle(q, v, -45*DEG2RAD);//quat.setAxisAngle(q, v, -90*DEG2RAD);	
+      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);	
+      vec3.transformQuat(v,v,q);	
+      if(isEyes)	
+      {	
+        //this.eyelidsFinW = 0	
+        this.squintFinW*=Math.abs(this.offsetAngle/30)	
+      }	
+      break;	
+    case "DOWN":	
+      quat.setAxisAngle(q, v, 45*DEG2RAD);//quat.setAxisAngle(q, v, 90*DEG2RAD);	
+      vec3.rotateY(v,v, this.offsetAngle*DEG2RAD);	
+      vec3.transformQuat(v,v,q);	
+      if(isEyes)	
+      {	
+  	
+        this.eyelidsFinW*=Math.abs(this.offsetAngle/30)	
+      }	
+      break;	
   }
   // Move to head position and save modified target position
   

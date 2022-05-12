@@ -86,7 +86,7 @@ FacialController.prototype.onRemovedFromScene = function(scene)
 
 FacialController.prototype.onStart = function()
 {
-  this.resetFace();
+  
    // Get morph targets
   var children = this._root.childNodes;
   this._morphDeformers = {};
@@ -124,7 +124,7 @@ FacialController.prototype.onStart = function()
       this._facialBS[children[child].name] = targets;
     }
   }
-  
+  this.resetFace();
   
   if (!this._morphDeformers)
   {
@@ -384,9 +384,9 @@ FacialController.prototype.facialBlend = function(dt)
   // Eye blink
 	var keys = Object.keys(this._facialBS);
   var blinkW = this._facialBS[keys[0]][this._eyeLidsBS[0][0]]
-  if(blinkW && this._Blink) this._Blink.time = this._Blink.end;
+  if(blinkW) this._Blink.time = this._Blink.end;
   if (this._blinking && this._eyeLidsBS.length){
-    weight = this._Blink.update(dt);
+    var weight = this._Blink.update(dt);
     if (weight !== undefined)
       var i = 0;
       for(var morph in this._morphDeformers)
@@ -614,10 +614,12 @@ FacialController.prototype.newGaze = function(gazeData, shift, gazePositions, he
 
   // TODO: recicle gaze in gazeManager
   var keys = Object.keys(this._facialBS);
+  var blinkW = this._facialBS[keys[0]][0]
   var eyelidsW = this._facialBS[keys[0]][this._eyeLidsBS[0][0]]
   var squintW = this._facialBS[keys[0]][this._squintBS[0][0]]
   gazeData.eyelidsWeight = eyelidsW; 
   gazeData.squintWeight = squintW; 
+  gazeData.blinkWeight = blinkW; 
   this.gazeManager.newGaze(gazeData, shift, gazePositions, headOnly);
  	
  /* var keys = Object.keys(this._facialBS);
