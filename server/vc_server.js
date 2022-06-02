@@ -251,11 +251,20 @@ wss.on('connection', function connection(ws) {
                 
                     } 
                     // Received a mute from the tablet
-                    if(object_message.action && object_message.action=="mute" ) 
+                    else if(object_message.action && object_message.action=="mute" ) 
                     {
                         msg = {
                           type:"tab_action", 
                           action: "mute",
+                          time:object_message.time || "no-time"
+                      } 
+                    }
+                    // Received a skip presentation from the tablet
+                    else if(object_message.action && object_message.action=="skip" ) 
+                    {
+                        msg = {
+                          type:"tab_action", 
+                          action: "skip",
                           time:object_message.time || "no-time"
                       } 
                     }
