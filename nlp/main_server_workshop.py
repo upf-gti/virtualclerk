@@ -1,3 +1,4 @@
+from email import contentmanager
 import re
 import json
 import asyncio
@@ -189,6 +190,7 @@ async def handle_person(data_people, nlp, websocket):
     await websocket.send(request_json)
     response_json = await websocket.recv()
     content = decode(response_json)
+    #pdb.set_trace()
     # chunk = extract_longest_chunk(content, nlp)
     # if chunk:
     #     extracted = str(chunk)
@@ -199,9 +201,8 @@ async def handle_person(data_people, nlp, websocket):
     #     compare_complete = False
     extracted = content
     compare_complete = True
-
     extracted = extracted.lower()
-
+    
     idx = 0
     found = None
     candidates = []
@@ -211,7 +212,7 @@ async def handle_person(data_people, nlp, websocket):
         name = data_people[idx, 0].lower()
         surname = data_people[idx, 1].lower()
         complete_name = name + " " + surname
-        
+        print("Complete: ", complete_name)
         if compare_complete:
             score = SequenceMatcher(None, extracted, complete_name).quick_ratio()
 
@@ -238,11 +239,12 @@ async def handle_person(data_people, nlp, websocket):
     else:
         sorted_names = sorted(similarity_vector, reverse=True)
         _, idx = sorted_names[0]
-    
+    print("Chunk: ", extracted)
+    print("Extracted: ", extracted)
     audios = []
     name = data_people[idx, 0].capitalize()
     surname = data_people[idx, 1].capitalize()
-    
+    print(name + ' ' + surname)
     #complete_name = data_people[idx,0].capitalize
     #r = requests.get(api_path+'people/person', params={'name': complete_name})
     r = requests.get(api_path+'people/person', params={'name': name + ' ' + surname})
@@ -388,7 +390,7 @@ async def handle_place(data_places, floors, nlp, websocket):
         else:
             target_token = extract_target(content, nlp)
             target = str(target_token).lower()
-            print("TARGET: " + target)
+            
             if target == "library":
                 message = ("Use the elevator or the stairs to go to the minus 2 floor."
                            " Then follow the corridor and go upstairs."
@@ -457,7 +459,6 @@ async def handle_place(data_places, floors, nlp, websocket):
                 content = decode(response_json)
                 audios = []
                 message = None
-
     data = {'text': message, 'audios': audios}
     return data
     #return message
@@ -472,6 +473,7 @@ async def agent(websocket, path):
     data_groups = load_groups(service, groups_file_id, path_to_groups)
     data_places = load_places(service, places_file_id, path_to_places)
 
+    yes_keywords = ['yes', 'all right', 'exactly', 'naturally', 'sure', 'just so']
     person_keywords = ['person', 'researcher', 'employee', 'people', 'member']  # keywords for person path
     group_keywords = ['group', 'organization', 'research group']  # keywords for group path
     place_keywords = ['place', 'location', 'localization', 'room', 'office']  # keywords for place path
@@ -494,8 +496,18 @@ async def agent(websocket, path):
         res = None
         if response['type'] == "start":
 
-            presentation = ("Hi, my name is Eva, the new ICT Departament Virtual Assistant! I'll we happy to help you."
-                            " Are you looking for a person, a research group or a room in particular?")
+            presentation = ("Good morning all and Welcolme! I am EVA, the Etic Virtual Assistant. " 
+                            "My duty is to help visitors to find out where you are located, so you can be reachable when needed. " 
+                            "I am very determined to do my job as well as I can! "
+                            "I feel very proud to be part of this community, and I am eager to find out all about your wonderful research! "
+                            "Today is a very special day, we are going to celebrate the Final of the 2022 PhD Workshop 10th edition and the 20th anniversary of the very first thesis defense at the UCAETIC! "
+                            "I am very happy to see so many members of the department ready to celebrate! "
+                            "I believe that the Chairman of our university has also come to join us on such a special occasion. "
+                            "What a fantastic day to find out the research you are all doing! "
+                            "What a fantastic day to show what I do, though, in my case, you will have  to be patient. I am still learning! "
+                            "Let’s start the celebration. "
+                            "Are you coming for today’s activity?")
+
             request['type'] = 'request'
             payload = {'text': presentation}
             r = requests.get(api_path+'phrases/phrase', params=payload)
@@ -518,7 +530,10 @@ async def agent(websocket, path):
                 continue
             content = response['content']
             print("CONTENT: ", content)
+            message= presentation
             conversation = True
+            workshop = False
+
             while conversation:
                 audios = []
                 if response['type'] == 'end':
@@ -528,8 +543,44 @@ async def agent(websocket, path):
                 content = response['content']
                 target_token = extract_target(content, nlp)
                 target = str(target_token).lower()
+                print(target)
                 
-                if target in person_keywords:
+                #Added for PhD Workshop
+                if "Good morning " in message and target in yes_keywords:
+                    print("Yes ", target)
+                    workshop = True
+                    message = ('Great. PhD Workshop 2022 is in Sala Aranyo. Sala Aranyo is located on the floor minus second. '
+                    'Take the elevator, or the stairs. You will find it right there.')
+                    payload = {'text': message}
+                    r = requests.get(api_path+'phrases/phrase', params=payload)
+                    #print(r.json())
+                    if r.status_code ==200 and len(r.json()):
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    res = { 'text': message, 'audios': [data] }
+
+                elif "Good morning " in message and target in nothing_keywords:
+                    print("Yes ", target)
+                    message = 'Then, are you looking for a researcher, a group or a place?'
+                    payload = {'text': message}
+                    r = requests.get(api_path+'phrases/phrase', params=payload)
+                    #print(r.json())
+                    if r.status_code ==200 and len(r.json()):
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    request['content'] = { 'text': message, 'data': [data] }
+                    request['type'] = 'request'
+                    request_json = json.dumps(request)
+                    await websocket.send(request_json)
+                    response_json = await websocket.recv()
+                    #content = decode(response_json)
+                    response = json.loads(response_json)
+                    continue
+                ######
+
+                elif target in person_keywords:
                     #data_people = getPeopleNames()
                     res = await handle_person(data_people, nlp, websocket)
 
@@ -540,10 +591,30 @@ async def agent(websocket, path):
                 elif target in place_keywords:
                     #data_places = getGroupNames()
                     res = await handle_place(data_places, floors, nlp, websocket)
-     
-                elif target in ["skip"]:
-                    message = 'Are you looking for a place, a researcher or a group?'
-                     #getAudioPhrase
+
+                elif target in nothing_keywords:
+                    conversation = False
+                    message = 'See you next time, bye.'
+                    #getAudioPhrase
+                    request['type'] = 'request'
+
+                    r = requests.get(api_path+'phrases/phrase', params={'text': message})
+                    if r.json()[0]:
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    request['content'] = {'text': message, 'data': data}
+                   ## request_json = encode(message, 'request')
+                    #request_json = encode(request, 'request')
+                    request_json = json.dumps(request)
+                    await websocket.send(request_json)
+                    request_json = encode('', 'end')
+                    await websocket.send(request_json)
+                    continue
+
+                elif target in yes_keywords:
+                    message = 'Are you looking for a place, a researcher or a group?'#'What are you looking for? An activity, a researcher, a group or a place?'
+                    #getAudioPhrase
                     request['type'] = 'request'
 
                     r = requests.get(api_path+'phrases/phrase', params={'text': message})
@@ -558,26 +629,6 @@ async def agent(websocket, path):
                     response_json = await websocket.recv()
                     #content = decode(response_json)
                     response = json.loads(response_json)
-                    continue
-
-                elif target in nothing_keywords:
-                    conversation = False
-                    message = 'See you next time, bye.'
-                    #getAudioPhrase
-                    request['type'] = 'request'
-
-                    r = requests.get(api_path+'phrases/phrase', params={'text': message})
-                    if r.json()[0]:
-                        data = r.json()[0]
-                    else: 
-                        data = None
-                    request['content'] = {'text': message, 'data': [data]}
-                   ## request_json = encode(message, 'request')
-                    #request_json = encode(request, 'request')
-                    request_json = json.dumps(request)
-                    await websocket.send(request_json)
-                    request_json = encode('', 'end')
-                    await websocket.send(request_json)
                     continue
                 else:
                     response = await handle_not_understood(request, websocket)
@@ -609,7 +660,11 @@ async def agent(websocket, path):
 
                 if "No" in content:
                     conversation = False
-                    message = 'See you next time, bye.'
+
+                    if workshop:
+                        message = 'Then, bye bye and enjoy the workshop.'
+                    else:
+                        message = 'See you next time, bye.'
                     #getAudioPhrase
                     request['type'] = 'request'
 
