@@ -297,12 +297,14 @@ async def handle_place(data_places, floors, nlp, websocket):
         audios = []
         
         replaced_content = content
+        print(content)
         for key, value in number_map.items():
             replaced_content = replaced_content.replace(key, value)
 
         replaced_content = replaced_content.replace(" ", "")
-
         match = re.search(r"(\d\d)\.?(\d\d\d)", replaced_content)
+        if not match:
+            match = re.search(r"(\d\d)\/?(\d\d\d)", replaced_content)
         if match:
             code = match.group()
             building_code = match.group(1)

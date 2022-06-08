@@ -14,6 +14,16 @@ function init_websocket () {
   connection.onopen = function () {
     // connection is opened and ready to use
     console.log("Connection opened");
+    if(this.readyState== WebSocket.OPEN)
+      {
+          var message = {type: "session", data: {action: "tablet_connection", token: "dev"}};
+          this.send(JSON.stringify(message))
+         
+          //Wait for server response (client connected to this session)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      }
+      else{
+         
+      }
     // var container = document.getElementById("err-container");
     // container.innerText ="";
   };
@@ -50,10 +60,11 @@ function init_websocket () {
             var speech_btn = document.getElementById("speech-btn");
             speech_btn.style.visibility = "hidden";
             var cnt = document.getElementById("buttons-container");
-            cnt.style.display ='None';
+            cnt.style.display ='None'; 
+            var footer = document.getElementsByTagName("footer")[0];
+            footer.style.visibility = "hidden";
             var where = document.getElementById("where-form");
-            where.style.visibility = "visible"; 
-
+            where.style.visibility = "visible";
           break;
 
         case "request_map":
@@ -69,14 +80,26 @@ function init_websocket () {
           {
             showQuestionnaire();
             var btn = document.getElementById("play-btn");
-            if(btn.classList.contains("w3-gray-color"))
-            {
-                btn.classList.remove("w3-gray-color");
-                btn.classList.add("w3-red-color");
-            }
+            // if(btn.classList.contains("w3-gray-color"))
+            // {
+            //     btn.classList.remove("w3-gray-color");
+            //     btn.classList.add("w3-red-color");
+            // }
             btn.style.visibility = "visible";
+            var speech_btn = document.getElementById("speech-btn");
+            speech_btn.style.visibility = "hidden";
+            if(speech_btn.classList.contains("w3-red-color"))
+            {
+              speech_btn.classList.remove("w3-red-color");
+              speech_btn.classList.add("w3-gray-color");
+            }
+
             var waiting_cnt = document.getElementById("waiting-container")
             waiting_cnt.style.visibility = "visible";
+
+            var footer = document.getElementsByTagName("footer")[0];
+            footer.style.visibility = "visible";
+
             var where = document.getElementById("where-form");
             where.style.visibility = "hidden";
           }
@@ -102,8 +125,13 @@ function init_websocket () {
             var btn = document.getElementById("play-btn");
             btn.style.visibility = "hidden";
             
+            var skip_btn = document.getElementById("skip-container");
+            skip_btn.style.visibility = "hidden";
+
             var speech_btn = document.getElementById("speech-btn");
+            speech_btn.classList.remove("w3-gray-color");
             speech_btn.classList.add("w3-red-color");
+            
             speech_btn.style.visibility = "visible";
           }
 
@@ -113,10 +141,12 @@ function init_websocket () {
             {
               console.log('Agent ends recognizing');
               var speech_btn = document.getElementById("speech-btn");
-              speech_btn.style.visibility = "hidden";
+              speech_btn.classList.remove("w3-red-color");
+              speech_btn.classList.add("w3-gray-color");
+              // speech_btn.style.visibility = "hidden";
   
-              var btn = document.getElementById("play-btn");
-              btn.style.visibility = "visible";
+              // var btn = document.getElementById("play-btn");
+              // btn.style.visibility = "visible";
             }
           }
 
@@ -162,6 +192,12 @@ function init_websocket () {
               speech_btn.style.visibility = "hidden";
             if(speech_btn.classList.contains('anim'))
               speech_btn.classList.remove('anim');
+            if(speech_btn.classList.contains("w3-red-color"))
+            {
+              speech_btn.classList.remove("w3-red-color");
+              speech_btn.classList.add("w3-gray-color");
+            }
+              
             var btn = document.getElementById("play-btn");
             if(btn.classList.contains("w3-gray-color"))
             {
@@ -173,6 +209,9 @@ function init_websocket () {
             waiting_cnt.style.visibility = "visible";
             var where = document.getElementById("where-form");
             where.style.visibility = "hidden";
+
+            var footer = document.getElementsByTagName("footer")[0];
+            footer.style.visibility = "visible";
             
             document.getElementById('session').style.display = "block"
 

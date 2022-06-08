@@ -7,8 +7,18 @@
   font-weight: bold; 
   src: url('../../assets/Decima_Mono_W01_Bold.ttf');
 }
-* {
+
+*{
   font-family: Decima;
+  margin: 0;
+}
+body, html {
+  font-family: "Inconsolata", sans-serif;
+  font-size: 25px;
+}
+
+.menu {
+  display: none;
 }
 .bgimg {
   background-position: center;
@@ -106,14 +116,24 @@
   font-size: 45vh!important;/*35vh!important;*/
 }
 
-.w3-big-button{
+/* .w3-big-button{
   width: auto;
   height: auto;
   /* margin-left: calc(50% - 171.43px);calc(50% - 200px); */
-  position: relative;
+ /* position: relative;
   z-index: 1000;
   top:-60px;
+} */
+
+.w3-big-button {	
+  width: auto;
+  height: auto;
+  margin-left: calc(50% - 20vh);
+  position: absolute;
+  z-index: 1000;
+  top: 35%;
 }
+
 .w3-big-button:hover{
 }
 .w3-badge, .w3-tag {
@@ -145,6 +165,10 @@
 .w3-padding-35 {
   padding-top: 2px!important;
   padding-bottom: 35px!important;
+}
+.w3-padding-45 {
+  padding-top: 5px!important;
+  padding-bottom: 45px!important;
 }
 .autocomplete-items {
     position: absolute;
@@ -325,9 +349,15 @@ input:focus {
   font-size: 45vh!important; /*35vh!important;*/
 }
 
+.fa.fa-microphone.w3-gray-color.absolut{
+  margin-left: 40px;
+  font-size: 45vh!important; /*35vh!important;*/
+
+}
+
 .fa.fa-microphone.w3-red-color.absolut{
   visibility: hidden;
-  margin-left: 50px;
+  margin-left: 40px;
   color: #E8308A !important;
   font-size: 45vh!important; /*35vh!important;*/
 
@@ -417,20 +447,11 @@ input:focus {
   padding: 5px;
 }
 
-
-.w3-big-button {
-  width: auto;
-  height: auto;
-  margin-left: calc(50% - 148.43px);
+#questionnaire{
   position: absolute;
   z-index: 1000;
-  top: 35%;/*50%;*/
-}
-
-#questionnaire{
-  position: relative;
-  z-index: 1000;
-  height: 100%;
+  height: 100vh;
+  width: 100vw;
   background-color: white;
   visibility: hidden;
 }
@@ -455,7 +476,7 @@ footer{
     color: #E8308A;
     background-color: white;
     border: 1px #E8308A;
-    margin: 10px;
+    margin: 70px;
     position: relative!important;
     top: 0;
 }
@@ -464,4 +485,9 @@ iframe{
 }
 .w3-text-center{
   text-align: center;
+}
+
+[type=checkbox], [type=radio] {
+  padding: 0;
+  transform: scale(1.5); 
 }

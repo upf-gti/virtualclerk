@@ -16,15 +16,16 @@ function Blink (blinkData, eyeLidsBSW){
   this.initialWeight = eyeLidsBSW || 0;
   this.targetWeight = blinkData.amount || 0.75;
   
+  this.currentWeight = 0;
   // Transition
   this.transition = true;
   this.time = 0;
 }
 
 
-Blink.prototype.update = function(dt){
+Blink.prototype.update = function(dt, w){
   this.time += dt;
-  
+  //this.initialWeight = w =  0;
   // Waiting to reach start
   if (this.time < this.start)
     return;
@@ -35,12 +36,15 @@ Blink.prototype.update = function(dt){
     // Cosine interpolation
     inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5;
     // Return value
-    return this.initialWeight*(1-inter) + this.targetWeight * inter;
+    this.currentWeight = this.initialWeight*(1-inter) + this.targetWeight * inter;
+    return this.currentWeight;
   }
   
   // Stay still during attackPeak to relax
-  if (this.time > this.attackPeak && this.time < this.relax)
-    return this.targetWeight;
+  if (this.time > this.attackPeak && this.time < this.relax){
+    this.currentWeight = this.targetWeight;
+    return this.currentWeight;
+  }
   
   
   // Transition 2 (opening back)
@@ -49,13 +53,15 @@ Blink.prototype.update = function(dt){
     // Cosine interpolation
     inter = Math.cos(Math.PI*inter)*0.5 + 0.5;
     // Interpolate with scene eyeLidsBSW
-    return this.initialWeight*(1-inter) + this.targetWeight * inter;
+    this.currentWeight = w*(1-inter) + this.targetWeight * inter;//this.initialWeight*(1-inter) + this.targetWeight * inter
+    return this.currentWeight;
   }
   
   // End 
   if (this.time >= this.end){
     this.transition = false;
-    return this.initialWeight;
+    this.currentWeight = w;
+    return this.currentWeight;//this.initialWeight;
   }
   
 }
@@ -794,10 +800,10 @@ GazeManager.prototype.gazePositions = {
 };
 Gaze.prototype.gazeBS = {	
   "RIGHT": {squint:0, eyelids:0}, "LEFT": {squint:0, eyelids:0},	
-  "UP": {squint:0.3, eyelids:0}, "DOWN": {squint:0, eyelids:0.5},	
+  "UP": {squint:0.3, eyelids:0}, "DOWN": {squint:0, eyelids:0.},	
   "UPRIGHT": {squint:0.3, eyelids:0}, "UPLEFT": {squint:0.3, eyelids:0},	
-  "DOWNRIGHT": {squint:0, eyelids:0.5}, "DOWNLEFT": {squint:0, eyelids:0.5},	
-  "CAMERA": {squint:0, eyelids:0}, 	"EYESTARGET": {squint:0, eyelids:0}
+  "DOWNRIGHT": {squint:0, eyelids:0.1}, "DOWNLEFT": {squint:0, eyelids:0.1},	
+  "CAMERA": {squint:0, eyelids:0}, 	"EYESTARGET": {squint:0, eyelids:0}, "HEADTARGET": {squint:0, eyelids:0},"NECKTARGET": {squint:0, eyelids:0}
 };
 
 // Constructor (lookAt objects and gazePositions)
@@ -856,8 +862,8 @@ GazeManager.prototype.update = function(dt){
           var eyes = false
         
       	this.gazeActions[i].update(dt, eyes);//update eyelids weight!!!!!!!!!!
-        var eyelidsW = this.gazeActions[i].eyelidsW;
-        var squintW = this.gazeActions[i].squintW;
+        var eyelidsW = eyelidsW || this.gazeActions[i].eyelidsW;	
+        var squintW = squintW || this.gazeActions[i].squintW;
         var blinkW = this.gazeActions[i].blinkW;
       }
     }
@@ -906,14 +912,6 @@ function Gaze (gazeData, shift, lookAt, gazePositions){
 
 Gaze.prototype.initGazeData = function(gazeData, shift){
   
-  this.eyelidsW = gazeData.eyelidsWeight|| 0;
-  this.eyelidsInitW = gazeData.eyelidsWeight|| 0;
-  this.squintW = gazeData.squintWeight|| 0;
-  this.squintInitW = gazeData.squintWeight|| 0;
-  this.squintFinW = gazeData.squintWeight|| 0;
-  this.blinkW = gazeData.eyelidsWeight|| 0;
-  this.blinkInitW = gazeData.eyelidsWeight|| 0;
-  this.blinkFinW = gazeData.eyelidsWeight|| 0;
   // Sync
   this.start = gazeData.start || 0.0;
   this.end = gazeData.end || 2.0;
@@ -927,7 +925,7 @@ Gaze.prototype.initGazeData = function(gazeData, shift){
   
   
   // Offset direction
-  this.offsetDirection =stringToUpperCase(gazeData.offsetDirection, "Gaze offsetDirection", "RIGHT");
+  this.offsetDirection = stringToUpperCase(gazeData.offsetDirection, "Gaze offsetDirection", "RIGHT");
 	
   // Target
  	this.target = stringToUpperCase(gazeData.target, "Gaze target", "CAMERA");
@@ -940,6 +938,16 @@ Gaze.prototype.initGazeData = function(gazeData, shift){
   this.transition = true;
   this.time = 0;
   
+  //Blendshapes	
+  this.eyelidsW =  0;	
+  this.eyelidsInitW =  0;	
+  this.eyelidsFinW = gazeData.eyelidsWeight || this.gazeBS[this.target].eyelids;	
+  this.squintW = gazeData.squintWeight|| 0;	
+  this.squintInitW = gazeData.squintWeight|| 0;	
+  this.squintFinW = gazeData.squintWeight || this.gazeBS[this.target].squint;	
+  this.blinkW =  0;	
+  this.blinkInitW =  0;	
+  this.blinkFinW = gazeData.eyelidsWeight || this.gazeBS[this.target].eyelids;
 
   // Extension - Dynamic
   this.dynamic = gazeData.dynamic || false;
@@ -958,6 +966,7 @@ Gaze.prototype.update = function(dt , atEyes){
   
   // Time increase
   this.time +=dt;
+  var inter = 0;
   // Wait for to reach start time
   if (this.time < this.start)
     return;
@@ -1022,7 +1031,14 @@ Gaze.prototype.update = function(dt , atEyes){
       this.squintW =this.squintInitW*(this.time)+this.squintFinW*(1-this.time); 
     }*/
     if(!this.dynamic)
-    	this.transition = false;
+    {
+      this.transition = false;
+      
+      this.eyelidsW = this.eyelidsInitW;
+      this.squintW  = this.squintInitW;
+      this.blinkW   = this.blinkInitW;
+        	
+    }  	
     // Extension - Dynamic
     else{
     	vec3.copy(this.lookAt.transform.position, this.EndP); 
@@ -1052,10 +1068,10 @@ Gaze.prototype.initGazeValues = function(isEyes){
         if(this.influence == "HEAD" && this.target == "CAMERA"){	
           pos[0] -= pos[0] 	
         }	
-        if(isEyes)	
+        if(!isEyes)	
           pos[1] += 5;	
-        else	
-          pos[1] -= 8;	
+        /*else	
+          pos[1] -= 8;	*/
       }	
       vec3.copy(this.targetP, pos);
     }else
@@ -1264,7 +1280,7 @@ HeadBML.prototype.initHeadData = function(headData){
 
 
 
-HeadBML.prototype.update = function (dt){
+HeadBML.prototype.update = function (dt, targetVector){
   this.headNode.transform.mustUpdate = true;
   
   // Define initial values
@@ -1302,6 +1318,12 @@ HeadBML.prototype.update = function (dt){
       quat.rotateY(headRotation, headRotation,  -angle*DEG2RAD);
     else if (this.lexeme == "TILT")
       quat.rotateZ(headRotation, headRotation,  -angle*DEG2RAD);
+    
+    // Progressive lookAt effect
+    inter = (this.time-this.start)/(this.end-this.start);
+    // Cosine interpolation
+    inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5;
+    quat.slerp(headRotation, headRotation, this.lookAtRot, inter*0.1);
   }
 
 	// StrokeStart
@@ -1333,6 +1355,12 @@ HeadBML.prototype.update = function (dt){
       quat.rotateY(headRotation, headRotation,  angle*DEG2RAD);
     else if (this.lexeme == "TILT")
       quat.rotateZ(headRotation, headRotation,  angle*DEG2RAD);
+
+      // Progressive lookAt effect
+    inter = (this.time-this.start)/(this.end-this.start);
+    // Cosine interpolation
+    inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5;
+    quat.slerp(headRotation, headRotation, this.lookAtRot, inter*0.1);
 	}
 
 
@@ -1360,6 +1388,12 @@ HeadBML.prototype.update = function (dt){
       quat.rotateY(headRotation, headRotation,  -angle*DEG2RAD);
     else if (this.lexeme == "TILT")
       quat.rotateZ(headRotation, headRotation,  -angle*DEG2RAD);
+
+      // Progressive lookAt effect
+    inter = (this.time-this.start)/(this.end-this.start);
+    // Cosine interpolation
+    inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5;
+    quat.slerp(headRotation, headRotation, this.lookAtRot, inter*0.1);
 	}
 
 
@@ -1387,12 +1421,22 @@ HeadBML.prototype.update = function (dt){
 
 
 	// Relax -> Move towards lookAt final rotation
-	else if (this.time > this.relax && this.time < this.end){
-		inter = (this.time-this.relax)/(this.end-this.relax);
+	else if (this.time > this.relax && this.time < this.end)
+  {
+    inter = (this.time-this.relax)/(this.end-this.relax);
     // Cosine interpolation
     inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5;
 
-    quat.slerp(headRotation, headRotation, this.lookAtRot, inter*0.1); // Why 0.1?
+    if(targetVector){
+      // lookAt pos change
+      vec3.FRONT.set(0,0,1)
+      var target = quat.lookAt(quat.create(), targetVector, vec3.fromValues(0,1,0));
+      quat.slerp(headRotation, headRotation, target, inter*0.1); // Why 0.1?
+    }
+    else{
+      quat.slerp(headRotation, headRotation, this.lookAtRot, inter*0.1); // Why 0.1?
+    }
+
     /*
 	    // Should store previous rotation applied, so it is not additive
 	    if (this.phase == 2){
@@ -1412,13 +1456,14 @@ HeadBML.prototype.update = function (dt){
   {
     //this.headNode.getComponent("Target").enabled = true;
     this.transition = false;
+    //this.headNode.getComponent("Target").enabled = true;
   }
 	
-  // Progressive lookAt effect
+  /*// Progressive lookAt effect
   inter = (this.time-this.start)/(this.end-this.start);
   // Cosine interpolation
   inter = Math.cos(Math.PI*inter+Math.PI)*0.5 + 0.5;
-  quat.slerp(headRotation, headRotation, this.lookAtRot, inter*0.1);
+  quat.slerp(headRotation, headRotation, this.lookAtRot, inter*0.1);*/
 
   if (this.time > this.end)
   {
@@ -1494,364 +1539,548 @@ var stringToUpperCase = function(item, textItem, def){
 
 
 //--------------------LIPSYNC------------------
+// ------------------------ TEXT TO LIP --------------------------------------------
 
-// Constructor (lookAt objects and gazePositions)
-function TextToLipsync (text){
-  this.weights= {
-    open_mouth: 0,
-    lips_pressed:0,
-    lower_lip_in:0,
-    lower_lip_down:0,
-    tongue_up:0,
-    kiss:0,
-    narrow_mouth:0
-  }
-  this.time = -0.1;
-  this.globalTime=0;
-  this.BS = [];
-  this.idx = 0;
-  this.sidx = 0;
-  this.text = text || "";
-  this.sentences = [];
-  this.speaking = false;
-  this.numbers = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+function Text2LipInterface() {
+  let _ = new Text2Lip();
+
+  this.start = _.start.bind(_);
+  this.stop = _.stop.bind(_);
+  this.pause = _.pause.bind(_);
+  this.resume = _.resume.bind(_);
+
+  this.setTables = _.setTables.bind(_);
+  this.setDefaultSpeed = function (speed) { if (typeof (speed) === 'number' && speed > 0.001) { _.DEFAULT_SPEED = speed; } };
+  this.setIntensity = _.setIntensity.bind(_);
+
+  this.update = _.update.bind(_);
+
+  this.pushSentence = _.pushSentence.bind(_);
+  this.cleanQueueSentences = _.cleanQueueSentences.bind(_);
+
+  this.getBSW = function () { return _.BSW; }
+
+  this.getCompactState = _.getCompactState.bind(_);
+  this.isWorking = function () { return (this.getCompactState() & 0x01) == 0; }
+  this.isPaused = function () { return (this.getCompactState() & 0x02) > 0; }
+  this.needsSentences = function () { return (this.getCompactState() & 0x04) > 0; }
+  this.getNumSentences = function () { return _.queueSize; }
+
+  this.setEvent = _.setEvent.bind(_);
 }
-TextToLipsync.prototype.update = function(dt)
-{
-  var phonemaTiming = 0.03//0.04; //0.05 = microsoft voice
-  var sentenceTiming =1//0.015; //0.055 = microsoft voice
-   var f = 0.6;
-  var weights = Object.assign({}, this.weights)
-  
-  if(this.sentences[this.sidx ].length && this.idx< this.BS[this.sidx].length)
-  {
-  	weights = this.BS[this.sidx][this.idx];
-    if(this.idx-1>=0)
-    {
-      for(var w in weights)
-      {
-        var ww = cosineInterpolate(weights[w], this.BS[this.sidx][this.idx-1][w], f);
-        /*var newW = (1-f)*this.BS[this.sidx][this.idx-1][w];
-        var ww = smootherstep(newW, 0 , 1) 
-        weights[w] *=f +(1-f)*this.BS[this.sidx][this.idx-1][w] ;*/
-        weights[w] = ww;
+
+function Text2Lip() {
+  this.DEFAULT_SPEED = 8; // phonemes/s
+
+  // tables ( references )
+  this.lowerBoundVisemes = null;
+  this.upperBoundVisemes = null;
+  this.coarts = null;
+  this.ph2v = null;
+  this.numShapes = 0;
+
+  // manages display of a sentence
+  this.working = false;
+  this.paused = false;
+  this.speed = this.DEFAULT_SPEED; // phonemes/s
+  this.text = "";
+  this.currIdx = 0; // current initial character (aka when t=0 during interpolation, this char is shown)
+  this.currT = 0; // current time of interpolation
+  this.useCoarticulation = true;
+  this.delay = 0;
+
+  // variables for managing list of sentences to display
+  this.currSent = null;
+  this.queueIdx = 0;
+  this.queueSize = 0;
+  this.sentenceQueue = new Array(Text2Lip.QUEUE_MAX_SIZE);
+  this.sentenceIDCount = 1; // when pushing, a 0 will mean failure. Start IDs at 1
+
+  // intensity
+  this.intensity = 0.5;
+
+  // blendshape weights. User can use this to do mouthing
+  this.BSW = new Float32Array(this.numShapes); this.BSW.fill(0);
+
+  // needed because of coarticulation
+  this._currV = new Float32Array(this.numShapes); this._currV.fill(0);
+  this._targV = new Float32Array(this.numShapes); this._targV.fill(0); // next visem - target
+
+  // event listeners
+  this.onIdle = null;
+  this.onSentenceEnd = null; // receives ended sentence
+  this.onSentenceStart = null; // receives starting sentence
+
+  // default tables
+  this.setTables( T2LTABLES.Ph2V, T2LTABLES.Coarticulations, T2LTABLES.LowerBound, T2LTABLES.UpperBound );
+}
+
+
+Text2Lip.prototype.setEvent = function (eventType, fun) {
+  if (typeof (fun) !== 'function') { return false; }
+  switch (eventType) {
+      case "onIdle": this.onIdle = fun; break;
+      case "onSentenceEnd": this.onSentenceEnd = fun; break;
+      case "onSentenceStart": this.onSentenceStart = fun; break;
+      default: return false;
+  }
+  return true;
+}
+
+Text2Lip.prototype.setTables = function (phonemeToViseme, coarts, lowerBoundVisemes, upperBoundVisemes = null) {
+  this.lowerBoundVisemes = lowerBoundVisemes;
+  this.upperBoundVisemes = (upperBoundVisemes && upperBoundVisemes.length > 0) ? upperBoundVisemes : lowerBoundVisemes;
+  this.coarts = coarts;
+  this.ph2v = phonemeToViseme;
+
+  this.numShapes = 0
+  if (lowerBoundVisemes && lowerBoundVisemes.length > 0) {
+      this.numShapes = lowerBoundVisemes[0].length;
+  }
+
+
+  this.BSW = new Float32Array(this.numShapes); this.BSW.fill(0);
+  this._currV = new Float32Array(this.numShapes); this._currV.fill(0);
+  this._targV = new Float32Array(this.numShapes); this._targV.fill(0); // next visem - target
+
+}
+
+Text2Lip.prototype.setIntensity = function (value) {
+  this.intensity = Math.max( 0, Math.min( 1, value ) );
+}
+
+/**
+* 
+* @param {*} phoneme 
+* @param {Array} outResult if not null, result will be written to this array. Otherwise a new array is generated with the resulting values and returned 
+* @returns returns outResult or a new Float32Array
+*/
+Text2Lip.prototype.getViseme = function (phoneme, outResult = null) {
+  // this handles properly undefined and nulls.
+  if (!(phoneme in this.ph2v)) { return this.lowerBoundVisemes[0]; } // assuming there are visemes
+  let visIdx = this.ph2v[phoneme];
+  if (visIdx < 0 || visIdx >= this.lowerBoundVisemes.length) { return this.lowerBoundVisemes[0]; } // assuming there are visemes
+
+  let lower = this.lowerBoundVisemes[visIdx];
+  let upper = this.upperBoundVisemes[visIdx];
+
+  let result = (outResult) ? outResult : (new Float32Array(this.numShapes));
+  let intensity = this.intensity;
+  for (let i = 0; i < this.numShapes; i++) {
+      result[i] = lower[i] * (1 - intensity) + upper[i] * intensity;
+  }
+  return result;
+
+}
+
+/**
+* 
+* @param {*} phoneme 
+* @returns returns a reference to the coart entry
+*/
+Text2Lip.prototype.getCoarts = function (phoneme) {
+  // this handles properly undefined and nulls.
+  if (!(phoneme in this.ph2v)) { return this.coarts[0]; } // assuming there are coarts
+  let visIdx = this.ph2v[phoneme];
+  if (visIdx < 0 || visIdx >= this.coarts.length) { return this.coarts[0]; } // assuming there are visemes
+  return this.coarts[visIdx];
+}
+
+// constant
+Text2Lip.QUEUE_MAX_SIZE = 32;
+
+Text2Lip.prototype.start = function () {
+  this.stop(false);
+  this.working = true;
+  this.paused = false;
+
+  this.changeCurrentSentence(false);
+
+}
+Text2Lip.prototype.pause = function () { this.paused = this.working; } // can only be paused if working
+Text2Lip.prototype.resume = function () { this.paused = false; }
+
+/**
+* stops update. No sentence is modified. However some variables are reseted, meaning the sentence being displayed currently will start from the beginning 
+* if a start is called
+* To completely clean the queue, call cleanQueueSentences or pass true as argument
+* @param {Bool} cleanQueue if true, all pending sentences are cleared and will not be displayed. 
+*/
+Text2Lip.prototype.stop = function (cleanQueue = false) {
+  this.working = false;
+  this.paused = false;
+  this.currIdx = -1; // for a smooth intro
+  this.currT = 0;
+
+  this._currV.fill(0);
+  this._targV.fill(0);
+  this.BSW.fill(0);
+
+  if (!!cleanQueue) // force to be boolean
+      this.cleanQueueSentences();
+}
+
+/**
+* returns a number 
+* Bit 0: set when module is not working ( stopped )
+* Bit 1: set when module is working but paused
+* Bit 2: set when module does not have more sentences to compute. If working, it is idle, waiting for some push
+* if the entire value is 0, the module is actively working
+* @returns 
+*/
+Text2Lip.prototype.getCompactState = function () {
+  let result = !this.working;
+  result |= this.paused << 1;
+  result |= (!this.queueSize) << 2;
+  return result;
+}
+
+Text2Lip.prototype.update = function (dt) {
+  if (!this.working || this.paused || !this.currSent) { return; }
+  // check for sentence delay
+  if (this.delay > 0.001) {
+      this.delay -= dt;
+
+      if (this.delay >= 0.0) {
+          return;
       }
-      
-    }
-    
-    if(this.time>=phonemaTiming)//timing of each phonema
-    	this.idx++;
+      dt = -this.delay;
+      this.delay = 0;
+      if (dt < 0.001) return;
   }
- 	var time = phonemaTiming*this.sentences[this.sidx ].length+sentenceTiming; //duration of the sentence
- 
-  /*if(dt>0.2)
-    dt= 0.016;*/
-  
-  if(this.time <=phonemaTiming)//current phonema
-  	this.time+=dt;
-  else //start next phonema
-    this.time = 0;
-  
-  if (this.time>=0)
-	  this.globalTime+=dt;
-  
-  //start new sentence (reset params)
-  if(this.globalTime>= time && this.sidx <this.sentences.length-1)
-  {
-    this.sidx++;
-    this.idx=0;
-    this.time =0; //waiting time to start new sentence
-    this.globalTime=0;
-    if(this.sidx>=this.sentences.length)
-    {
-      this.time=-1;
-      this.speaking = false;
-    }
+  let durations = this.currSent.phT;
+
+  let invSpeed = 1.0 / this.speed; // seconds / phoneme
+  this.currT += dt;
+
+  let p = 0;
+  let t = 0;
+  let useGeneralSpeed = true; // when durations array ends, it should continue with general speed
+  // use specific phoneme durations
+  if (durations && (this.currIdx + 1) < durations.length) {
+      useGeneralSpeed = false;
+      let durationIdx = this.currIdx + 1;
+      while (durationIdx < durations.length && durations[durationIdx] < this.currT) {
+          this.currT -= Math.max(0.001, durations[durationIdx]);
+          durationIdx++;
+          p++;
+      }
+      useGeneralSpeed = durationIdx >= durations.length; // durations array has ended. Check general speed
+      this.currT = Math.max(0, this.currT); // just in case
+      t = (durationIdx < durations.length) ? (this.currT / durations[durationIdx]) : Math.max( 0, Math.min(1, (this.currT * this.speed))); // after phoneme ease-in, t will be clamped to 1 until phoneme change
+      this.currIdx = durationIdx - 1;
   }
-  
-	if(this.time>=0.0001)//sentence
-  {
-    this.speaking = true;
-    return weights;
+
+  // no more specific phoneme durations and there is enough time to check 
+  if (useGeneralSpeed) {
+      // use temporal p variable to avoid overwriting durations array result
+      let general_p = Math.floor(this.currT * this.speed); // complete phonemes 
+      t = (this.currT * this.speed) - general_p;  // remaining piece of phoneme, used on interpolation
+      this.currT -= general_p * invSpeed;
+      this.currIdx += general_p;
+      p += general_p;
   }
- 	
-  else //beteween sentences
-  {
-    this.speaking = false;
-    return this.weights;
+
+
+  // t function modifier;
+  //t = 0.5* Math.sin( t * Math.PI - Math.PI * 0.5 ) +0.5; // weird on slow phonemes
+
+  // phoneme changed
+  if (p > 0) {
+      for (let i = 0; i < this.numShapes; ++i) { this._currV[i] = this._targV[i]; }
+
+      // end of sentence reached
+      if (this.currIdx >= (this.text.length)) {
+          for (let i = 0; i < this.numShapes; ++i) { this.BSW[i] = this._targV[i]; }
+          this.changeCurrentSentence();
+          return;
+      }
+
+      // compute target viseme, using coarticulation 
+      // outro
+      if (this.currIdx === this.text.length - 1) {
+          for (let i = 0; i < this.numShapes; ++i) { this._targV[i] = 0; }
+      }
+      else if (!this.useCoarticulation) {
+          this.getViseme(this.text[this.currIdx + 1], this._targV);
+      }
+      else {
+          let rawTarget = this.getViseme(this.text[this.currIdx + 1]);
+          let coartsW = this.getCoarts(this.text[this.currIdx + 1]); // coarticulation weights of target phoneme
+
+          //let visemePrev = this._currV; // phoneme before target
+          let visemeAfter = this.getViseme(this.text[this.currIdx + 2]); // phoneme after target
+
+          for (let i = 0; i < this.numShapes; ++i) {
+              this._targV[i] = (1.0 - coartsW[i]) * rawTarget[i] + coartsW[i] * visemeAfter[i]//(0.2 * visemePrev[i] + 0.8 * visemeAfter[i]);
+          }
+      }
   }
-    
+
+  // final interpolation
+  let BSW_0 = this._currV;
+  let BSW_1 = this._targV;
+
+  for (let i = 0; i < this.numShapes; ++i) {
+      this.BSW[i] = (1.0 - t) * BSW_0[i] + t * BSW_1[i];
+  }
 }
-String.prototype.splice = function(startIdx, endIdx, len, str) {
-    return this.slice(0, startIdx) + str + this.slice( Math.abs(endIdx)+len);
+
+Text2Lip.prototype.cleanQueueSentences = function () {
+  this.queueIdx = 0;
+  this.currSent = null;
+  this.queueSize = 0;
+  this.sentenceQueue.fill(null);
+}
+
+/**
+* sets all necessary parameters for the sentence indicated by queueIdx (if any).  
+* @param {Bool} advanceIndex before setting paramters, index of sentence is incremented and amoun of sentences reduced, discarding the previous sentence
+* @returns 
+*/
+Text2Lip.prototype.changeCurrentSentence = function (advanceIndex = true) {
+
+  if (advanceIndex) { // when executing start(), do not advance 
+      --this.queueSize;
+      this.sentenceQueue[this.queueIdx] = null; // dereference obj
+      this.queueIdx = (this.queueIdx + 1) % Text2Lip.QUEUE_MAX_SIZE;
+
+      // end events
+      if (this.currSent && this.onSentenceEnd) { this.onSentenceEnd(this.currSent); }
+      if (this.currSent.onEndEvent) { this.currSent.onEndEvent(); }
+  }
+
+  if (this.queueSize <= 0) {
+      this.cleanQueueSentences();
+      if (this.onIdle) { this.onIdle(); }
+      return;
+  }
+
+  // parameters setup
+  this.currSent = this.sentenceQueue[this.queueIdx];
+
+  this.text = this.currSent.text;
+  this.speed = this.currSent.speed;
+  this.delay = this.currSent.delay;
+  this.useCoarticulation = this.currSent.useCoart;
+
+  this.currIdx = -1; // for a smooth intro
+  this.currT = 0;
+
+  // target first phoneme
+  this.getViseme(this.text[0], this._targV);
+
+
+  // Start events
+  if (this.onSentenceStart) { this.onSentenceStart(this.currSent); } // generic start event
+  if (this.currSent.onStartEvent) { this.currSent.onStartEvent(); }     // sentence specifici start event
+}
+
+/**
+* Adds sentence to the queue.
+WARNING!!!
+Each sentence will have a smooth intro and outro. (from neutral to phoneme and from phoneme to neutral pose)
+   - Intro time DOES NOT have to be accounted for on any timing
+   - Outro time HAVE to be accounted for timings. If not included in sentT, the system will use default phoneme speed to transition to neutral. sentT should take it into account
+Any value below 0.001 will be ignored.
+* @param {string/array} _text string of phonemes to display 
+* @param {object} options object containing any of the optional string of phonemes to display 
+* @param {Float32Array} phT (Optional) timing for each phoneme. Overrides sentT, speed and defaultSpeed
+* @param {Number} sentT (Optional): Number, timing (in seconds) of whole string. Overrides defaultSpeed and speed argument. Delay not included. Defaults to null.
+* @param {Number} speed (Optional) phonemes/s of whole string. Overrides generalSpeed. Delay not included
+* @param {Boolean} useCoart (Optional) use coarticulation. Default to true.
+* @param {Number} delay (Optional) delay to start playing this string. Delay starts at the end of the sentence it is being played now. If none, delay starts immediately.
+* @param {Boolean} copyArrays (Optional) Whether to create new arrays and copy values or directly use the reference sent as argument. Defaults to false (only reference is used).
+* @param {Function} onStartEvent (Optional) when sentence starts, this event is called after the generic onSentenceStart event.
+* @param {Function} onEndEvent (Optional) when sentence ends, this event is called after the generic onSentenceEnd event.
+* @returns the id number of the sentence if successful. 0 otherwise.
+*/
+Text2Lip.prototype.pushSentence = function (_text, options = {}) {
+  let phT = options.phT;
+  let sentT = options.sentT;
+  let speed = options.speed;
+  let useCoart = options.useCoart;
+  let delay = options.delay;
+  let copyArrays = options.copyArrays;
+  let onEndEvent = options.onEndEvent;
+  let onStartEvent = options.onStartEvent;
+
+  if (this.queueSize === Text2Lip.QUEUE_MAX_SIZE) { return 0; }
+  if (!_text || !_text.length || _text.length < 0) { return 0; }
+
+  // clean input
+  if (!(phT instanceof Float32Array)) phT = null;
+
+  if (copyArrays) {
+      _text = Array.from(_text); // create new array from
+      if (phT) {
+          let temp = new Float32Array(phT.length);
+          temp.set(phT);
+          phT = tmep;
+      }
+  }
+
+  // outro 
+  if (phT && phT.length > _text.length) {
+      let outroIdx = _text.length;
+      if (phT[outroIdx] < 0.001) {
+          temp[outroIdx] = 1.0 / this.DEFAULT_SPEED;
+      }
+  }
+
+  let sentenceSpeed = this.DEFAULT_SPEED;
+  if (typeof (speed) === 'number' && !isNaN(speed) && speed >= 0.001) sentenceSpeed = speed;
+  if (typeof (sentT) === 'number' && !isNaN(sentT) && sentT >= 0.001) sentenceSpeed = _text.length / sentT;
+  if (typeof (useCoart) === 'undefined') { useCoart = true; } useCoart = !!useCoart;
+  if (typeof (delay) !== 'number' || isNaN(delay) || delay < 0) delay = 0;
+  if (!(onEndEvent instanceof Function)) { onEndEvent = null; }
+  if (!(onStartEvent instanceof Function)) { onStartEvent = null; }
+
+  let id = this.sentenceIDCount++;
+  let sentenceObj = {
+      id: id,
+      text: _text,
+      phT: phT,
+      speed: sentenceSpeed,
+      useCoart: useCoart,
+      delay: delay,
+      onStartEvent: onStartEvent,
+      onEndEvent: onEndEvent,
+  }
+
+  let indexPos = (this.queueIdx + this.queueSize) % Text2Lip.QUEUE_MAX_SIZE;
+  this.sentenceQueue[indexPos] = sentenceObj; // only reference is copied
+  this.queueSize++;
+
+  // when working but idle because of no sentences, automatically play this new sentence
+  if (this.working && this.queueSize == 1) {
+      this.changeCurrentSentence(false);
+  }
+  return id;
 };
 
-function remove(str, char, min, max) {
-  
-    var text = str.replace(char, function (m0) {
-        if (max > min) {
-            max--;
-            return '';
-        }
-        return m0;
-    });
-  return text
+
+// TABLES ------------------------------
+
+//[ "kiss", "upperLipClosed", "lowerLipClosed", "jawOpen", "tongueFrontUp", "tongueBackUp", "tongueOut" ],
+let t2lLowerBound = [
+  [ 0,     0,     0,     0,     0,     0,     0   ], // 0
+  [ 0,     0,     0,     0,     0,     0,     0   ],
+  [ 0.1,   0.15,  0,     0.2,   0,     0,     0   ],
+  [ 0.0,   0.13,  0,     0.2,   0.2,   0,     0   ],
+  [ 0,     0.08,  0,     0.1,   0.5,   0.5,   0   ], // 4
+  [ 0.25,  0.15,  0.15,  0.2,   0,     0,     0   ],
+  [ 0.35,  0.15,  0.15,  0.2,   0,     0,     0   ],
+  [ 0.3,   0.15,  0,     0.1,   1,     0,     0   ],
+  [ 0,     0.5,   0.2,   0.1,   0,     0,     0   ], // 8
+  [ 0,     0.0,   0.2,   0.1,   0,     0,     0   ],
+  [ 0.3,   0,     0,     0.13,  0.8,   0,     0   ],
+  [ 0.0,   0,     0,     0.2,   0.0,   0.3,   0   ],
+  [ 0.0,   0,     0,     0.1,   0.0,   1,     0   ], // 12
+  [ 0.3,   0,     0,     0.1,   1,     0,     0   ],
+  [ 0,     0,     0.0,   0.1,   0.35,  0,     0.3 ],
+];
+
+let t2lUpperBound = [
+  [ 0,     0,     0,     0,     0,     0,     0   ], // 0
+  [ 0,     0,     0,     0,     0,     0,     0   ], 
+  [ 0.1,   0.15,  0,     0.6,   0,     0,     0   ],
+  [ 0.0,   0.13,  0,     0.3,   0.2,   0,     0   ],
+  [ 0,     0.08,  0,     0.2,   0.6,   0.6,   0.2 ], // 4
+  [ 0.45,  0.15,  0.15,  0.6,   0,     0,     0   ],
+  [ 0.65,  0.3,   0.3,   0.3,   0,     0,     0   ],
+  [ 0.3,   0.15,  0,     0.4,   1,     0,     0.5 ],
+  [ 0,     1,     1,     0.4,   0,     0,     0   ], // 8
+  [ 0,     0.0,   1,     0.4,   0,     0,     0   ],
+  [ 0.3,   0,     0,     0.13,  0.8,   0,     0   ],
+  [ 0.0,   0,     0,     0.4,   0.0,   0.3,   0   ],
+  [ 0.1,   0,     0,     0.2,   0.0,   1,     0   ], // 12
+  [ 0.3,   0,     0,     0.22,  1,     0,     0   ],
+  [ 0,     0,     0.0,   0.4,   0.55,  0,     0.8 ],
+];
+
+// coarticulation weights for each phoneme. 0= no modification to phoneme, 1=use phonemes arround to build viseme
+let t2lCoarts = [
+  [ 0,     0,     0,     0,     0,     0,     0   ], // 0
+  [ 0.6,   0.6,   0.6,   0.6,   0.6,   0.6,   0.6 ],
+  [ 0.2,   0.3,   0.3,   0.3,   0.1,   0.3,   0.5 ],
+  [ 0.0,   0.3,   0.3,   0.3,   0.1,   0.3,   0.5 ],
+  [ 0.1,   0.3,   0.3,   0.3,   0,     0,     0.5 ], // 4
+  [ 0.2,   0.3,   0.3,   0.3,   0.3,   0.3,   0.5 ],
+  [ 0.2,   0.3,   0.3,   0.3,   0.3,   0.3,   0.5 ],
+  [ 1,     0.4,   0.4,   0.9,   0,     0.5,   0.5 ],
+  [ 1,     0,     0,     0.6,   1,     0.8,   0.5 ], //8 
+  [ 1,     0,     0,     0.2,   1,     0.5,   0.5 ],
+  [ 1,     0.6,   0.6,   0.6,   0,     0.5,   0.5 ],
+  [ 1,     1,     1,     0.7,   0.5,   0.5,   0.5 ],
+  [ 0.7,   0.5,   0.5,   0.9,   0.6,   0,     0.5 ], //12
+  [ 1,     1,     1,     0.5,   0,     0,     0.5 ],
+  [ 1,     0.3,   0.3,   0.3,   0,     0.6,   0   ], 
+];
+
+
+let t2lPh2v = {
+  ".": 0, "_": 1, " ": 1,
+  "a": 2,//"AA"	 
+  "@": 2,//"AE"	 
+  "A": 2,//"AH"	 
+  "c": 5,//"AO"	 
+  "W": 2,//"AW"	 
+  "x": 2,//"AX"	 
+  "Y": 2,//"AY"	 
+  "E": 3,//"EH"	 
+  "R": 3,//"ER"	 
+  "e": 3,//"EY"	 
+  "I": 4,//"IH"	 
+  "X": 4,//"IX"	 
+  "i": 4,//"IY"	 
+  "o": 5,//"OW"	 
+  "O": 5,//"OY"	 
+  "U": 6,//"UH"	 
+  "u": 6,//"UW"	 
+
+  "b": 8,//"B"	
+  "C": 10,//"CH"	 // ------------------------ Really needs a new viseme - 'SH'
+  "d": 13,//"D"	
+  "D": 13,//"DH"	
+  "F": 13,//"DX"	
+  "L": 7,//"EL"	
+  "M": 8,//"EM"	
+  "N": 7,//"EN"	
+  "f": 9,//"F"	
+  "g": 12,//"G"	
+  "h": 11,//"H"	// reduced
+  "J": 10,//"JH"	 // ------------------------- Really needs a new viseme 'ZH'
+  "k": 12,//"K"	
+  "l": 7,//"L"	
+  "m": 8,//"M"	
+  "n": 7,//"N"	
+  "G": 12,//"NG"	// reduced
+  "p": 8,//"P"	
+  "Q": 2,//"Q"	 // -------------------------- What is this?
+  "r": 7,//"R"	
+  "s": 10,//"S"	
+  "S": 10,//"SH"	 // ------------------------ Really needs a new viseme - 'CH'
+  "t": 13,//"T"	
+  "T": 14,//"TH"	
+  "v": 9,//"V"	
+  "w": 6,//"W"	
+  "H": 6,//"WH"	
+  "y": 4,//"Y"	
+  "z": 10,//"Z"	
+  "Z": 10,//"ZH"	 // ------------------------- Really needs a new viseme 'JH'
+
+};
+
+let T2LTABLES = {
+  BlendshapeMapping : { kiss : 0, upperLipClosed : 1, lowerLipClosed : 2, jawOpen : 3, tongueFrontUp : 4, tongueBackUp : 5, tongueOut : 6 },
+
+  LowerBound : t2lLowerBound,
+  UpperBound : t2lUpperBound,
+  Coarticulations: t2lCoarts,
+  Ph2V : t2lPh2v, 
 }
 
-TextToLipsync.prototype.parse = function(text){
-  
-  this.BS = [];
-  this.idx = 0;
-  this.sidx = 0;
-  this.globalTime=0;
-  this.time=0;
- 	this.text = text || this.text;
-  //this.text = remove(this.text, /!/g,1, 4);
-  this.text = this.text.replace(/[?!.;]/g, " .");
- // this.text = this.text.replace(/[,:]/g, "  ");
-  this.text = this.text.replace(/[\/#$%\^&\*{}=\-_`~()']/g,"").toLowerCase(); ///[\/#$%\^&\*{}=\-_`~()]\s'/g
-  
-  var hasNumbers = /\d/.test(this.text);
-  if(hasNumbers){
-    var that = this;
-  	let i = null, a = this.text.split(""),b = "",num = "";
-    a.forEach(function(e)
-    {
-    	if (!isNaN(e)&&(/\d/.test(e)))
-      {
-      	
-        if(i==null)
-          i = a.indexOf(e);
-        num += e
-               
-       // var num2str = that.numbers[e];
-				if(a[a.indexOf(e)+1] == " " || num == "55")
-        {
-          var str = num2words(num);
-       		str+=" ";
-          
-          if(num == "55")
-          {
-            num+=" ";
-           
-          }
-          that.text = that.text.splice(i, a.indexOf(e), num.length-1, str)
-      		a = that.text.split("");
-          i = null;
-          num ="";
-        }
-         // num2str+=" ";
-        
-      	
-   		} 
-   	})
-  }
-  
-  //split text to sentences
-  this.sentences = this.text.split(".");
-  if(!this.sentences[this.sentences.length-1].length)
-    this.sentences.pop();
-  //assign weights to visemes (BS)
-  for(var j = 0; j<this.sentences.length; j++)
-  {
-    var text = this.sentences[j];
-    
-    var vm = []
-    for(var i=0; i<text.length;i++)
-    {
-      var actions = Object.assign({},this.weights);
-      var letter = text[i];
-      if(i==0 && letter ==" ")
-      {
-        var firstPart = text.substr(0, i);
-    		var lastPart = text.substr(i + 1);
-        text = firstPart+lastPart;
-        continue;
-      }
-      var prevLetter = i==0? "": text[i-1];
-      var nextLetter = i==text.length-1? "": text[i+1];
-      var nextNextLetter = i==text.length-2? "": text[i+2];
-      
-      if(letter == "a" || letter == "i" || letter == "y")
-      {
-        actions.open_mouth = 0.3;
-      }
-      else if(letter == "e")
-      {
-        if(!(prevLetter == "n" && nextLetter == " "))
-        {
-        	actions.open_mouth = 0.25;
-        }
-        else{console.log("n")}
-      }
-      else if(letter == "u" || letter == "w")
-      {
-        
-        actions.open_mouth = 0.10;
-        actions.narrow_mouth = 0.70;
-        actions.tongue_up = 0.20;
-        
-        /*if(nextNextLetter == " " )//long U
-        {
-          var firstPart = text.substr(0, i+1);
-    			var lastPart = text.substr(i + 2);
-          text = firstPart+"u"+lastPart;
-          //text[i+1] = "u"
-        }*/
-          
-      }
-      else if(letter == "o")
-      {
-        if(nextLetter == "u" )//&& nextNextLetter == " " )
-        { //sounds U
-          actions.open_mouth = 0.35;
-          //text[i+1] = "";
-          var firstPart = text.substr(0, i+1);
-    			var lastPart = text.substr(i + 2);
-          text = firstPart+lastPart;
-        }
-        else 
-        {
-        	actions.open_mouth = 0.35;
-        	actions.kiss = 0.20;
-        }
-          
-       /* if(nextLetter == " ")//next sound is U
-        {
-          text[i+1] = "u";
-        }*/
-        
-      }
-      else if(letter =="f" || letter =="v" || letter =="p"&&nextLetter == "h") // /f,v/
-      {
-        actions.lower_lip_in = 0.85;
-        
-        if(letter =="p"&&nextLetter == "h" ||letter =="v"&&nextLetter == "e")
-        {
-        	var firstPart = text.substr(0, i+1);
-    			var lastPart = text.substr(i + 2);
-          
-          text = firstPart+lastPart;
-         // text[i+1] = "";
-        }
-      }
-      else if(letter == "l" || letter =="n" || letter =="d" || letter =="r" ||  letter =="t"&&nextLetter!="h") // /t,d,n,l/ 
-      {
-        actions.open_mouth = 0.3;
-        actions.tongue_up = 1;
-       	if( letter == "l"&&nextLetter =="d" || letter=="r"&&nextLetter=="")
-        {
-          var firstPart = text.substr(0, i+1);
-    			var lastPart = text.substr(i + 2);
-          text = firstPart+lastPart;
-          //text[i+1] = "";  
-        }
-      }
-      else if(letter=="t" && nextLetter=="h")
-      {
-        actions.open_mouth = 0.15;
-        actions.tongue_up = 0.5;
-        var firstPart = text.substr(0, i+1);
-    		var lastPart = text.substr(i + 2);
-        text = firstPart+lastPart;
-        //text[i+1] = "";  
-      }
-      else if(letter =="m" || letter =="b" || letter =="p"&&nextLetter != "h") // /p,b,m/
-      {
-        actions.lips_pressed = 0.15;
-        actions.open_mouth = -0.05;
-      }
-      else if(letter == "s" ||letter == "z" || letter == "c" || letter == "x" || letter=="q")
-      {
-        if((letter=="c" || letter=="s")&&nextLetter=="h" || letter=="c"&&(nextLetter=="e"||nextLetter=="i")&&nextNextLetter!=" ")
-        {
-          actions.kiss = 0.5;
-          var firstPart = text.substr(0, i+1);
-    			var lastPart = text.substr(i + 2);
-          text = firstPart+lastPart;
-          //text[i+1] = "";  
-         
-        }
-        else
-          actions.lower_lip_down = 0.22;
-        
-        if(nextLetter == "s" || (letter=="c" || letter=="s")&&nextLetter=="e"&&nextNextLetter==" " || letter=="c"&&nextLetter=="k")
-        {
-          var firstPart = text.substr(0, i+1);
-    			var lastPart = text.substr(i + 2);
-          text = firstPart+lastPart;
-          //text[i+1] = "";  
-        }
-      }
-      else if (letter=="t"&&nextLetter==" ")
-      {
-        var firstPart = text.substr(0, i+1);
-    		var lastPart = text.substr(i + 2);
-        text = firstPart+lastPart;
-      }
-      
-     /* else if(letter =="t" || letter =="n" || letter =="d" || letter =="r")
-      {
-        actions.open_mouth = 0.15;
-        actions.tongue_up = 1;
-      }*/
-      else
-      {
-        actions.open_mouth = 0.1;
-      }
-      vm.push(actions)
-    /*  if(text[i+1]==" ")
-    	{
-    	  var firstPart = text.substr(0, i+1);
-      	var lastPart = text.substr(i + 2);
-      	text = firstPart+lastPart;
-    	}*/
-    }
-    if(vm.length)
-    	this.BS.push(vm)
-      
-    this.sentences[j] = text;   
-  }
-
-}
-
-function num2words(num){
-  var ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
-              'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
-              'seventeen', 'eighteen', 'nineteen'];
-  var tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty',
-              'ninety'];
-
-  var numString = num.toString();
-
-  if (num < 0) throw new Error('Negative numbers are not supported.');
-
-  if (num === 0) return 'zero';
-
-  //the case of 1 - 20
-  if (num < 20) {
-    return ones[num];
-  }
-
-  if (numString.length === 2) {
-    return tens[numString[0]] + ' ' + ones[numString[1]];
-  }
-
-  //100 and more
-  if (numString.length == 3) {
-    if (numString[1] === '0' && numString[2] === '0')
-      return ones[numString[0]] + ' hundred';
-    else
-      return ones[numString[0]] + ' hundred and ' + num2words(+(numString[1] + numString[2]));
-  }
-
-  if (numString.length === 4) {
-    var end = +(numString[1] + numString[2] + numString[3]);
-    if (end === 0) return ones[numString[0]] + ' thousand';
-    if (end < 100) return ones[numString[0]] + ' thousand and ' + num2words(end);
-    return ones[numString[0]] + ' thousand ' + num2words(end);
-  }
-}
 function smootherstep(edge0, edge1, x) {
   if( (edge1 - edge0) == 0 )
     return x;
@@ -2182,11 +2411,6 @@ Lipsync.prototype.playSample = function(){
   //this.timeStart = LS.GlobalScene.time;
   //this.outstr = "time, e0, e1, e2, e3, bs_kiss, bs_lips_closed, bs_jaw\n";
 }
-
-
-
-
-
 
 
 // Update lipsync weights

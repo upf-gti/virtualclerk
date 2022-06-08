@@ -221,24 +221,25 @@ FacialController.prototype.onUpdate = function(e,dt)
   }
   // Gaze
   if (this.gazeManager){
+    var keys = Object.keys(this._facialBS);
   	var weights = this.gazeManager.update(dt);
     var i = 0;
-    if(weights.eyelids)
+    if(weights.eyelids!=undefined)
       for(var morph in this._morphDeformers)
       {
         for(var j = 0; j< this._eyeLidsBS[i].length; j++){
-          
-          this._morphDeformers[morph][this._eyeLidsBS[i][j]].weight = weights.eyelids;
+          this._facialBS["Body"][this._eyeLidsBS[i][j]] =  weights.eyelids;
+          //this._morphDeformers[morph][this._eyeLidsBS[i][j]].weight = weights.eyelids;
         }
         i++;
       }
     i = 0
-    if(weights.squint)
+    if(weights.squint!=undefined)
       for(var morph in this._morphDeformers)
       {
         for(var j = 0; j< this._squintBS[i].length; j++){
-    
-          this._morphDeformers[morph][this._squintBS[i][j]].weight = weights.squint;
+          this._facialBS["Body"][this._squintBS[i][j]] =  weights.squint;
+          //this._morphDeformers[morph][this._squintBS[i][j]].weight = weights.squint;
         }
         i++;
       }
@@ -255,8 +256,9 @@ FacialController.prototype.onUpdate = function(e,dt)
    // Face blend (blink, facial expressions, lipsync)
    this.facialBlend(dt);
    
+   var gaze = this.gazeManager.gazeActions[1] ? true : false;
   // Head behavior
-  this.headBMLUpdate(dt);
+  this.headBMLUpdate(dt, gaze);
  
 }
 
@@ -326,25 +328,25 @@ FacialController.prototype.facialBlend = function(dt)
       for(var i = 0; i<BS.length; i++)
       {
         if(BS[i].mesh.includes(this.mouthOpenBSName))
-          BS[i].weight = (1-smooth)*BS[i].weight + smooth*facialLexemes.open_mouth;
+          this._facialBS["Body"][i] = (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes.open_mouth;
 
         if(BS[i].mesh.includes(this.kissBSName))
-          BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes.kiss;
+          this._facialBS["Body"][i] = (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes.kiss;
         
         if(BS[i].mesh.includes(this.tongueBSName))
-          BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes.tongue_up;
+          this._facialBS["Body"][i] = (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes.tongue_up;
     
         if(BS[i].mesh.includes(this.lowerLipINBSName))
-          BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes.lower_lip_in;
+          this._facialBS["Body"][i] = (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes.lower_lip_in;
         
         if(BS[i].mesh.includes(this.lowerLipDownBSName))
-          BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes.lower_lip_down;
+          this._facialBS["Body"][i] = (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes.lower_lip_down;
         
         if(BS[i].mesh.includes(this.mouthNarrowBSName))
-          BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes.narrow_mouth;
+          this._facialBS["Body"][i] = (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes.narrow_mouth;
     
         if(BS[i].mesh.includes(this.lipsPressedBSName))
-          BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes.lips_pressed;
+          this._facialBS["Body"][i] = (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes.lips_pressed;
       }
     }
   }
@@ -358,7 +360,7 @@ FacialController.prototype.facialBlend = function(dt)
       for(var i = 0; i<BS.length; i++)
       {
         if(BS[i].mesh.includes(this.mouthOpenBSName))
-          BS[i].weight = (1-smooth)*BS[i].weight + smooth*facialLexemes[2];
+          this._facialBS["Body"][i] = (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes[2];
 
         /*if(BS[i].mesh.includes(this.kissBSName))
           BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes[0];*/
@@ -367,16 +369,16 @@ FacialController.prototype.facialBlend = function(dt)
           BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes.tongue_up;*/
   
         if(BS[i].mesh.includes(this.lowerLipINBSName))
-          BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes[1];
+          this._facialBS["Body"][i] =  (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes[1];
         
         if(BS[i].mesh.includes(this.lowerLipDownBSName))
-          BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes[1];
+          this._facialBS["Body"][i] =  (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes[1];
         
         if(BS[i].mesh.includes(this.mouthNarrowBSName))
-          BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes[0]*0.5;
+          this._facialBS["Body"][i] =  (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes[0]*0.5;
   
         if(BS[i].mesh.includes(this.lipsPressedBSName))
-          BS[i].weight =  (1-smooth)*BS[i].weight + smooth*facialLexemes[1];
+          this._facialBS["Body"][i] =  (1-smooth)*this._facialBS["Body"][i] + smooth*facialLexemes[1];
       }
     }
   }
@@ -384,21 +386,38 @@ FacialController.prototype.facialBlend = function(dt)
   // Eye blink
 	var keys = Object.keys(this._facialBS);
   var blinkW = this._facialBS[keys[0]][this._eyeLidsBS[0][0]]
-  if(blinkW) this._Blink.time = this._Blink.end;
+  if(blinkW&& this._Blink && this._blinking && blinkW == this._Blink.currentWeight) blinkW = this._Blink.initialWeight;
   if (this._blinking && this._eyeLidsBS.length){
-    var weight = this._Blink.update(dt);
+    var weight = this._Blink.update(dt, blinkW);
     if (weight !== undefined)
+    {
       var i = 0;
       for(var morph in this._morphDeformers)
       {
         for(var j = 0; j< this._eyeLidsBS[i].length; j++){
           
-    			this._morphDeformers[morph][this._eyeLidsBS[i][j]].weight = weight;
+    		  this._facialBS[keys[i]][this._eyeLidsBS[i][j]] = this._facialBS[keys[i]][this._eyeLidsBS[i][j]] = weight;
         }
         i++;
       }
+    }
     if (!this._Blink.transition)
       this._blinking = false;
+  }
+
+  for(var i = 0; i<this._morphDeformers["Body"].length; i++)
+  {
+    var w = this._facialBS["Body"][i];
+    this._morphDeformers["Body"][i].weight = this._facialBS["Body"][i];
+    var e = null;
+    for(var k in this.map)
+    {
+      if( i == this.map[k]["Body"])
+        e = this.map[k]["Eyelashes"]
+    }
+    
+    if(e != null)
+      this._morphDeformers["Eyelashes"][e].weight = this._facialBS["Eyelashes"][e];
   }
 }
 
@@ -659,12 +678,21 @@ FacialController.prototype.newHeadBML = function(headData){
   }
 }
 // Update
-FacialController.prototype.headBMLUpdate = function(dt){
+FacialController.prototype.headBMLUpdate = function(dt, gaze){
   
-  if (this.headBML){
+  if (this.headBML && this.headBML.transition){
    /* if (this.headBML.transition){
       this._lookAtHeadComponent.applyRotation = false;*/
-      this.headBML.update(dt);
+      
+      var targetVector = null;
+      if(gaze){
+        var headPos = LS.GlobalScene.getNodeByUId(this.headNode).transform.getGlobalPosition();
+        var lookAtPos = LS.GlobalScene.getNodeByUId(this.lookAtHead).transform.getGlobalPosition();
+        targetVector = vec3.create();
+        vec3.sub(targetVector, lookAtPos, headPos);
+        vec3.normalize(targetVector, targetVector);
+      }
+      this.headBML.update(dt, targetVector);
    /* } else
       this._lookAtHeadComponent.applyRotation = true;*/
   }

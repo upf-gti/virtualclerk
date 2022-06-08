@@ -1523,7 +1523,7 @@ var V3 = vec3.create;
 var M4 = vec3.create;
 
 vec3.ZERO = vec3.fromValues(0,0,0);
-vec3.FRONT = vec3.fromValues(0,0,-1);
+vec3.FRONT = vec3.fromValues(0,0,1);
 vec3.UP = vec3.fromValues(0,1,0);
 vec3.RIGHT = vec3.fromValues(1,0,0);
 

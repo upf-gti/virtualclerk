@@ -32,16 +32,16 @@ BehaviorPlanner.prototype.update = function(dt){
   // Automatic state update
   if (this.nextBlockIn < this.stateTime){
     this.stateTime = 0;
-   // return this.createBlock();
+    return this.createBlock();
   }
   
   // Check if speech has finished to change to WAITING
-  if (this.state == LS.Globals.SPEAKING){
+  /*if (this.state == LS.Globals.SPEAKING){
     if (LS.Globals.BehaviorManager){
       if (LS.Globals.BehaviorManager.lgStack.length == 0 && LS.Globals.BehaviorManager.speechStack.length == 0)
         this.transition({control: LS.Globals.WAITING});
     }
-  }
+  }*/
   
   // Automatic blink and saccades
   return this.updateBlinksAndSaccades(dt);
@@ -89,15 +89,15 @@ BehaviorPlanner.prototype.transition = function(block){
       // Can start speaking at any moment
     case LS.Globals.LISTENING:
     	// Force to overwrite existing bml
-    	block.composition = "OVERWRITE";
+    	block.composition = "MERGE";
     	/*if(this.state ==LS.Globals.SPEAKING){
       	// Abort speech
       	this.abortSpeech();
     	}*/
     	// Look at user and default face
-    	this.attentionToUser(block, true);
+    	this.attentionToUser(block, false);
     	// Back-channelling
-    	this.nextBlockIn = 1 +  Math.random()*2;
+    	this.nextBlockIn = 0 +  Math.random()*2;
       console.log("PREV STATE:", currentState, "\nNEXT STATE:", "listening");
 			break;
   
@@ -111,7 +111,7 @@ BehaviorPlanner.prototype.transition = function(block){
     case LS.Globals.SPEAKING:
     	this.attentionToUser(block, true);
     	// Should I create random gestures during speech?
-    	this.nextBlockIn = 2 + Math.random()*4;
+    	this.nextBlockIn = Math.random()*1;//2 + Math.random()*4;
       console.log("PREV STATE:", currentState, "\nNEXT STATE:", "speaking");
   	break;
   }
@@ -148,7 +148,7 @@ BehaviorPlanner.prototype.createBlock = function(){
   var state = this.state;
   var block = {
     id: state, 
-    composition: "OVERWRITE"
+    composition: "MERGE"
   };
   
   switch(state)
@@ -157,13 +157,13 @@ BehaviorPlanner.prototype.createBlock = function(){
     case LS.Globals.LISTENING:
       this.nextBlockIn = 1.5 + Math.random()*3;
       // head -> link with this.currentArousal
-      if (Math.random() < 0.6)
+      if (Math.random() < 0.4)
       {
         block.head = {
           start: 0,
           end: 1.5 + Math.random()*2,
           lexeme: "NOD",
-          amount: 0.05 + Math.random()*0.1,
+          amount: 0.05 + Math.random()*0.05,
           type:"head"
         }
       }
@@ -200,6 +200,25 @@ BehaviorPlanner.prototype.createBlock = function(){
         }]
         
       }
+      if(Math.random() < 0.2){
+        var start = Math.random();
+        var end = start + 1 + Math.random();
+        var f = {
+          start: start,
+          attackPeak: start + (end-start)*0.2,
+          relax: start + (end-start)*0.5,
+          end: end,
+          lexeme: {
+            lexeme: "CHEEK_RAISER", 
+            amount: 0.1 + Math.random()*0.2
+        	},
+          type:"face"
+        }
+        if(block.face)
+          block.face.push(f)
+        else
+          block.face = f;
+      }
 
       // Gaze should already be towards user
 
@@ -210,22 +229,23 @@ BehaviorPlanner.prototype.createBlock = function(){
       
       this.nextBlockIn = 2 + Math.random()*4;
       // Head
-      if (Math.random() < 0.6){
+      if (Math.random() < 0.2){
         block.head = {
           start: 0,
           end: 2.5 + Math.random()*1.5,
-          lexeme: "NOD",
+          lexeme: "TILT",
           amount: 0.05 + Math.random()*0.05,
           type:"head"
         }
         // Deviate head slightly
         if (Math.random() < 0.85)
         {
-          var offsetDirections = ["DOWNRIGHT", "DOWNLEFT", "LEFT", "RIGHT"]; // Upper and sides
+          var start = Math.random();
+          var offsetDirections = ["CAMERA","DOWNRIGHT", "DOWNLEFT", "LEFT", "RIGHT"]; // Upper and sides
           var randOffset = offsetDirections[Math.floor(Math.random() * offsetDirections.length)];
           block.headDirectionShift = {
-            start: 0,
-            end: 1 + Math.random(),
+            start: start,
+            end: start + Math.random(),
             target: "CAMERA",
             offsetDirection: randOffset,
             offsetAngle: 1 + Math.random()*3,
@@ -262,7 +282,7 @@ BehaviorPlanner.prototype.createBlock = function(){
           target: "CAMERA",
           type:"gazeShift"
         }
-        block.composition = "OVERWRITE";
+        block.composition = "MERGE";
       }
 
     	break;
@@ -362,7 +382,7 @@ BehaviorPlanner.prototype.createBlock = function(){
 
       // Set to neutral face (VALENCE-AROUSAL)
       block.faceShift = {start: 0, end: 2, valaro: [0,0], type:"faceShift"};
-
+      block.composition = "MERGE"
      	break;
   }
   return block;
@@ -436,6 +456,7 @@ BehaviorPlanner.prototype.updateBlinksAndSaccades = function(dt){
     this.blinkCountdown = this.blinkDur;
     this.blinkIdle = this.blinkDur + 0.5 + Math.random()*10;
     this.blinkDur = Math.random()*0.5 + 0.15;
+    block.composition = "MERGE"
   }
   
   // Saccade
@@ -446,22 +467,22 @@ BehaviorPlanner.prototype.updateBlinksAndSaccades = function(dt){
     var randDir = opts[Math.floor(Math.random()*opts.length)];
     
     // Fixed point to saccade around?
-    var target = "EYESTARGET";
+    var target = "CAMERA"//"EYESTARGET";
     if (this.state == LS.Globals.LISTENING) 
       target = "CAMERA";
         
     if (!block) 
       block = {};
     
-   /* block.gazeShift = {
+    block.gaze = {
       start: 0,
       end: Math.random()*0.1+0.1,
       target: target, 
       influence: "EYES",
-      offsetDirection: randDir,
-      offsetAngle: Math.random()*3,// + 2,
-      type:"gazeShift"
-    }*/
+      offsetDirection: "CAMERA",
+      offsetAngle: Math.random()*3 + 2,
+      type:"gaze"
+    }
     
     this.saccCountdown = this.saccDur;
     if (this.state ==LS.Globals.LISTENING || this.state == LS.Globals.SPEAKING)
@@ -478,7 +499,7 @@ BehaviorPlanner.prototype.updateBlinksAndSaccades = function(dt){
 
 BehaviorPlanner.prototype.attentionToUser = function(block, overwrite){
   // If gazeShift already exists, modify
-
+  console.log("attention")
 	var end = 0.5 + Math.random();
 	var startHead = 0;
   var startGaze = startHead + Math.random()*0.5; // Late start
@@ -496,13 +517,13 @@ BehaviorPlanner.prototype.attentionToUser = function(block, overwrite){
 	// blink
 	var startBlink = -Math.random()*0.2;
 	var blink = {
-    start: startHead,
+    start: startBlink,
 		end: end,
     type:"blink"
 	}
 
 	// headDirectionShift
-	var offsetDirections = ["DOWN", "DOWNLEFT", "DOWNRIGHT"]; // Submissive? Listening?
+	var offsetDirections = ["CAMERA","DOWN", "DOWNLEFT", "DOWNRIGHT"]; // Submissive? Listening?
   var randOffset = offsetDirections[Math.floor(Math.random() * offsetDirections.length)];
 	var startDir = -Math.random()*0.3;
 	var headDir = {
@@ -525,7 +546,7 @@ BehaviorPlanner.prototype.attentionToUser = function(block, overwrite){
   // Force and remove existing bml instructions
   if (overwrite)
   {
-    block.blink = blink;
+    //block.blink = blink;
     block.faceVA = faceVA;
     block.gazeShift = gazeShift;
     block.headDirectionShift = headDir;

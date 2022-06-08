@@ -284,6 +284,19 @@ function setEvents()
         elem.style.display = "block"
     });
 
+
+    document.getElementById("skip-container").addEventListener("click", function(){
+        document.getElementById("skip-container").style.visibility = "hidden";
+        
+        //Speech microphone visible
+        var speech_btn = document.getElementById("speech-btn");
+        speech_btn.style.visibility = "visible";
+        
+        //Send action to server
+        var init_message = {type:"tab_action", action:"skip", time:timestamp}
+        ws.send(JSON.stringify(init_message));
+    });
+
     document.getElementById("accept-terms").addEventListener("click", function() {
         var age   = document.querySelector("#age").checked;       
         var gapi1 = document.querySelector("#gapi1").checked;
@@ -295,8 +308,15 @@ function setEvents()
             bkg.style.display = "none"
             var elem = document.getElementById("legalterms")
             elem.style.display = "none"
-            document.getElementById("play-btn").classList.remove("w3-red-color")
-            document.getElementById("play-btn").classList.add("w3-gray-color")
+            var btn = document.getElementById("play-btn");
+            //btn.classList.remove("w3-red-color");
+            //document.getElementById("play-btn").classList.add("w3-gray-color")
+            btn.style.visibility = "hidden";
+            var skip_btn = document.getElementById("skip-container");
+            skip_btn.style.visibility = "visible";
+
+            // var speech_btn = document.getElementById("speech-btn");
+            // speech_btn.style.visibility = "visible";
             // send start conversation "event" to the server
             var init_message = {type:"tab_action", action:"initialize", time:timestamp}
             ws.send(JSON.stringify(init_message));
@@ -361,11 +381,13 @@ function changeWaitingView()
 {
     var div = document.getElementById("waiting-container");
     var where = document.getElementById("where-form");
+    var speech_btn = document.getElementById("speech-btn");
             
     if(div.style.visibility == "hidden")
     {
         div.style.visibility = "visible";
         where.style.visibility = "hidden";
+        speech_btn.style.visibility = "visible";
     }
     else{
         div.style.visibility = "hidden";

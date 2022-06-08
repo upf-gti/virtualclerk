@@ -7,16 +7,25 @@ recognition.interimResults = false;
 recognition.maxAlternatives = 1;
 var final_transcript = "";
 
-
-var state = 0; //WAITING
+var state = 0; //WAITING	
 var lastState = state;
+var counter = 0;
 
-var mute = true;
+//App states
+var REST = 0;
+var SPEAKING = 1;
+var LISTENING = 2;
+var WAITING = 3;
+
+var mute = false;
 var recognition_enabled = false;
 var url = "dtic-recepcionist.upf.edu/port/8765/ws/" //"ws://dtic-recepcionist-kbnli.s.upf.edu:8765"//webglstudio.org/port/9001/ws/"//"dtic-recepcionist-kbnli.s.upf.edu:8765";
 var tabUrl = "dtic-recepcionist.upf.edu/port/3001/ws/"
 //var tabUrl = "dtic-recepcionist.upf.edu:3001"
-var CORE = {
+var APP = {
+	state: REST,
+	nextState : SPEAKING,
+	lastSpeakingTime: 0,
 	socket: null,
 	isFirstMsg:true,
 	lastQuestion: "",
@@ -33,41 +42,38 @@ var CORE = {
 		var player = new LS.Player({
 			width:800, height:600,
 			resources: "scene",
-			container_id:"character"
+			container_id:"character",
+			autoplay: false
 		});
 		
 		player.loadScene("scene/scene.json", function(){this.globals = window}.bind(this));
-		//document.querySelector("#character").appendChild( player.canvas )
-		//window.onmessage = this.appLoop.bind(this)
-
-		//-------------------------------------------------------Recognition Events
-		recognition.onstart = function(event){
-			that.start_recognition = true;
-			console.log("Recognition Start");
-			if(that.tabRemote)
-					that.tabRemote.sendMessage({type: "app_action", action: "recognition_start" })
-		
-		}
-		recognition.onaudiostart = function()
-		{
-			var that = this;
-			/*if(that.tabRemote)
-				that.tabRemote.sendMessage({type: "app_action", action: "recognition_start" })*/
-		}.bind(this)
-		recognition.onaudioend = function()
-		{
-			var that = this;
-			// if(that.tabRemote)
-			// 	that.tabRemote.sendMessage({type: "app_action", action: "recognition_end" })
-		}.bind(this)
-
-		recognition.onspeechstart = function(){
-			//var LS = CORE.iframe.contentWindow ? CORE.iframe.contentWindow.LS : window.LS;
-			var LS = window.LS;
-			if(LS)
-			{
-				state = LS.Globals.LISTENING;
-				LS.Globals.processMsg(JSON.stringify({type:'control',control:LS.Globals.LISTENING}), true);
+		//-------------------------------------------------------Recognition Events	
+		recognition.onstart = function(event){	
+			that.start_recognition = true;	
+			console.log("Recognition Start");	
+			if(that.tabRemote)	
+				that.tabRemote.sendMessage({type: "app_action", action: "recognition_start" })	
+			
+		}	
+		recognition.onaudiostart = function()	
+		{	
+			var that = this;	
+			/*if(that.tabRemote)	
+				that.tabRemote.sendMessage({type: "app_action", action: "recognition_start" })*/	
+		}.bind(this)	
+		recognition.onaudioend = function()	
+		{	
+			var that = this;	
+			// if(that.tabRemote)	
+			// 	that.tabRemote.sendMessage({type: "app_action", action: "recognition_end" })	
+		}.bind(this)	
+		recognition.onspeechstart = function(){	
+			//var LS = CORE.iframe.contentWindow ? CORE.iframe.contentWindow.LS : window.LS;	
+			var LS = window.LS;	
+			if(LS)	
+			{			
+				state = LS.Globals.LISTENING;	
+				LS.Globals.processMsg(JSON.stringify({type:'control',control:LS.Globals.LISTENING}), true);	
 			}
 			
 			// console.log("LISTENING(speech start)")
@@ -76,6 +82,7 @@ var CORE = {
 				that.tabRemote.sendMessage({type: "app_action", action: "speech_start" })
 
 		}.bind(this)
+
 		recognition.onspeechend = function(){
 			var LS = window.LS;
 
@@ -91,12 +98,12 @@ var CORE = {
 			
 		}.bind(this)
 
-		recognition.onend = function(event){
-			console.log("Recognition stopped from recognition.onend()");
-			that.start_recognition = false;
-			if(that.tabRemote)
-				that.tabRemote.sendMessage({type: "app_action", action: "recognition_end" })
-
+		recognition.onend = function(event){	
+			if(that.tabRemote)	
+				that.tabRemote.sendMessage({type: "app_action", action: "recognition_end" })	
+			console.log("Recognition stopped from recognition.onend()");	
+			that.start_recognition = false;	
+			this.state = this.nextState;
 		}
 		recognition.onresult = function(event) {
 			var interim_transcript = '';
@@ -133,11 +140,11 @@ var CORE = {
 		var protocol = location.protocol == "https:" ? "wss://" : "ws:";
 		//var protocol = "ws://"
 		this.mindRemote = new MindRemote();
-		this.mindRemote.connect(protocol+url, this.onConnectionStarted.bind(this), this.onConnectionError.bind(this, "nlp"));
+		this.mindRemote.connect(protocol+url, this.onConnectionStarted.bind(this, "nlp"), this.onConnectionError.bind(this, "nlp"));
 		this.mindRemote.onMessage = this.processMessage.bind(this);
 		// connect to Tablet Server
 		this.tabRemote = new MindRemote();
-		this.tabRemote.connect(protocol+tabUrl, this.onConnectionStarted.bind(this), this.onConnectionError.bind(this,"tablet"));
+		this.tabRemote.connect(protocol+tabUrl, this.onConnectionStarted.bind(this,"tablet"), this.onConnectionError.bind(this,"tablet"));
 		this.tabRemote.onMessage = this.processTabletMessage.bind(this);
 		var that = this;
 
@@ -178,64 +185,150 @@ var CORE = {
 	},
 	appLoop: function(dt)
 	{
-		if(window && this.start)
-		{
-			if(this.isFirstMsg && !recognition_enabled)
-			{
-				if(!this.mindRemote.sendMessage( {type:"start", content:""} )){
-					this.onConnectionError("nlp");
-					return;
-				}
+
+		if(window && this.start)	
+		{	
+			switch(this.state){
+				case REST:
+					counter = 0;
+
+					if(!this.mindRemote.sendMessage( {type:"start", content:""} )){	
+						this.onConnectionError("nlp");	
+						return;	
+					}	
+					LS.Globals.notSpeakingTime = 0;
+					this.state = SPEAKING; //sure? doing taht onProcessMessage?
+					//window.requestAnimationFrame(this.appLoop.bind(this));
+					mute = false;
+					LS.Globals.processMsg(JSON.stringify({type:'control',control: LS.Globals.SPEAKING}), true);	
+					break;
+				case LISTENING:
 					
-				//this.isFirstMsg = false;
-				recognition_enabled = true;
-				mute = false;
-				//if(start_recognition) recognition.stop()
-				window.requestAnimationFrame(this.appLoop.bind(this));
-				return;
-			}
-			var LS = window.LS;
-			if(LS.Globals){
-				var isSpeaking = LS.Globals.speaking;
-				if(isSpeaking) state = LS.Globals.SPEAKING;
-				if(isSpeaking&&this.start_recognition)
-				{
-					recognition.stop();
-					state = LS.Globals.PROCESSING
-					recognition_enabled = true
-					//LS.Globals.processMsg(JSON.stringify({type:'control', control: state}), true);
-					this.isFirstMsg = false;
-				}
-				else if(!this.isFirstMsg&&!isSpeaking&&!this.start_recognition&&!mute && recognition_enabled)
-				{
-					recognition.start();
-					if(state==LS.Globals.SPEAKING)
+
+					if(!this.start_recognition && !mute) recognition.start();
+					if(state != LS.Globals.LISTENING)
 					{
 						state = LS.Globals.LISTENING;
-						counter = 0;
-						LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);
+						LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);	
 					}
-				}
-				if(state == LS.Globals.LISTENING)
+
 					counter+=1;
-				if(counter>10800)
-				{
-					state = LS.Globals.WAITING;
-					LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);
+					if(counter>60)	
+					{	
+						/*this.state = REST;
+						state = LS.Globals.WAITING;	
+						LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);	*/
+						counter = 0;
+						this.mindRemote.sendMessage( {type:"end", content:""} );	
+					}
+					setTimeout(this.appLoop.bind(this), 3000);
+					break;
+				case SPEAKING:
 					counter = 0;
-				}
-			if(lastState != state && state == LS.Globals.SPEAKING) this.isFirstMsg = false;
-			lastState = state;
+					if(this.start_recognition) recognition.abort();
+
+					if(LS.Globals){	
+						var isSpeaking = LS.Globals.speaking;
+						this.lastSpeakingTime+= 1;
+						if(isSpeaking){
+							this.lastSpeakingTime = 0;
+
+						}else{// if(this.lastSpeakingTime>100){ //make sure she finished speaking
+							this.state = this.nextState;//LISTENING;
+							this.lastSpeakingTime = 0;
+							if(this.state == REST){
+								this.isFirstMsg = true;	
+								this.start = false;	
+								recognition_enabled = false	
+								state = LS.Globals.WAITING;
+								LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);
+							}
+						}			
+					}
+					window.requestAnimationFrame(this.appLoop.bind(this));
+					break;
+				case WAITING:
+					if(this.start_recognition) recognition.abort();
+
+					counter+=1;
+					if(counter>60)	
+					{	
+						/*this.state = REST;
+						state = LS.Globals.WAITING;	
+						LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);*/	
+						counter = 0;	
+						this.mindRemote.sendMessage( {type:"end", content:""} );
+					}
+					break;
 			}
-			
+			/*if(this.isFirstMsg && !recognition_enabled)	
+			{	
+				if(!this.mindRemote.sendMessage( {type:"start", content:""} )){	
+					this.onConnectionError("nlp");	
+					return;	
+				}	
+						
+				//this.isFirstMsg = false;	
+				recognition_enabled = true;	
+				mute = false;	
+				//if(start_recognition) recognition.stop()	
+				window.requestAnimationFrame(this.appLoop.bind(this));	
+				return;	
+			}	
+			var LS = window.LS;	
+			if(LS.Globals){	
+				var isSpeaking = LS.Globals.speaking;	
+				if(isSpeaking) state = LS.Globals.SPEAKING;	
+				if(isSpeaking&&this.start_recognition)	
+				{	
+					recognition.stop();	
+					state = LS.Globals.PROCESSING	
+					recognition_enabled = true	
+					//LS.Globals.processMsg(JSON.stringify({type:'control', control: state}), true);	
+					this.isFirstMsg = false;	
+				}	
+				else if(!this.isFirstMsg&&!isSpeaking&&!this.start_recognition&&!mute && recognition_enabled)	
+				{	
+					recognition.start();	
+					if(state==LS.Globals.SPEAKING)	
+					{	
+						state = LS.Globals.LISTENING;	
+						counter = 0;	
+						LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);	
+					}	
+				}	
+				if(state == LS.Globals.LISTENING)	
+					counter+=1;	
+				if(counter>10800)	
+				{	
+					state = LS.Globals.WAITING;	
+					LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);	
+					counter = 0;	
+				}	
+			if(lastState != state && state == LS.Globals.SPEAKING) this.isFirstMsg = false;	
+			lastState = state;	
+			}*/	
+				
 		}
 		
-		window.requestAnimationFrame(this.appLoop.bind(this));
+		//window.requestAnimationFrame(this.appLoop.bind(this));
+
 	},
-	onConnectionStarted: function(data)
+	onConnectionStarted: function(type)
 	{
-		console.log("Connection started! " + data)
+		console.log("Connection started! " + type)
 		//setTimeout(this.mindRemote.sendMessage( {type:"start", content:""} ), 10000)
+		if(type == "tablet")
+		{
+			if(this.tabRemote.socket && this.tabRemote.socket.readyState== WebSocket.OPEN)
+			{
+				this.tabRemote.sendMessage({type: "session", data: {action: "vc_connection", token: "dev"}})
+				
+				//Wait for server response (client connected to this session)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			}else{
+				setTimeout(this.onConnectionStarted.bind(this,type), 3000)
+			}
+		}
 		this.displayModal(false);
 		
 		recognition.continuous = true;
@@ -255,9 +348,9 @@ var CORE = {
 			var protocol = location.protocol == "https:" ? "wss://" : "ws:";
 			//var protocol = "ws://"
 			if(server == "nlp")
-				that.mindRemote.connect(protocol+url, that.onConnectionStarted.bind(that), that.onConnectionError.bind(that,"nlp"));
+				that.mindRemote.connect(protocol+url, that.onConnectionStarted.bind(that, "nlp"), that.onConnectionError.bind(that,"nlp"));
 			else if(server == "tablet")
-				that.tabRemote.connect(protocol+tabUrl, that.onConnectionStarted.bind(that), that.onConnectionError.bind(that,"tablet"));
+				that.tabRemote.connect(protocol+tabUrl, that.onConnectionStarted.bind(that, "tablet"), that.onConnectionError.bind(that,"tablet"));
 		},5000);
 	},
 
@@ -272,8 +365,8 @@ var CORE = {
 			mind.sendMessage( {type:"end", content:""} );
 		
 		}
-			if(!mind.requestAnswer( text_message ))
-				this.onConnectionError("nlp")
+		if(!mind.requestAnswer( text_message ))
+			this.onConnectionError("nlp")
 
 	},
 
@@ -286,8 +379,10 @@ var CORE = {
 			var LS = window.LS;
 			//state = LS.Globals.SPEAKING;
 			//isSpeaking = true
-			if(msg.type == "request")
+			if(msg.type == "request" && msg.content=="")
 			{
+				window.requestAnimationFrame(this.appLoop.bind(this));
+				return;
 				/*if(this.isFirstMsg && msg.content!="")
 				{
 					this.isFirstMsg = false;
@@ -300,6 +395,10 @@ var CORE = {
 				}*/
 		
 			}
+			this.state = SPEAKING;
+			this.nextState = LISTENING;
+			LS.Globals.speaking = true;
+
 			var obj = {type: "behaviours", data : []};
 			if(msg.content && msg.content.data)
 				if(msg.content.data.constructor == Array){
@@ -311,41 +410,67 @@ var CORE = {
 					
 						var d = {type:"lg", text: audio.audio_name, audio: audio.audio, start:t, end:t+duration};
 						obj.data.push(d);
-						t+=duration+0.1;
+						if(msg.content.text.includes("Great") || audio.audio_name&& audio.audio_name.includes("leader"))
+							t+=duration+0.1;
+						else
+							t+=duration+0.02;
 					}
 
 				}
 				else
-				obj.data= [ { type:"lg", text: msg.content.text, audio: msg.content.data.audio, start:0, end:4 }]; //speaking
+					obj.data= [ { type:"lg", text: msg.content.text, audio: msg.content.data.audio, start:0, end:4 }]; //speaking
 			else
 				obj = { type: "behaviours", data: [ { type:"lg", text: msg.content.text,  start:0.1, end:4 }]};
-			if(msg.content && msg.content.text.includes("Hi"))
-				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.3, start: 0.2, attackPeak: 0.3, relax: 0.4, end: 1.1})
-			if(msg.content&& msg.content.text.includes("name and surname"))
+			
+			if(msg.content && msg.content.text)
 			{
+				if(msg.content.text.includes("Hi"))
+					obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.4, start: 0.5, attackPeak: 1.1, relax: 1.8, end: 2.8, composition: "MERGE"})
 				
-				this.tabRemote.sendMessage({type:"request_data", data: "person"});
+				else if(msg.content.text.includes("Good morning"))
+				{
+					obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.4, start: 1.5, attackPeak: 2.1, relax: 2.8, end: 3.8, composition: "MERGE"}) //welcome
+					obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.2, start: 19.6, attackPeak: 20, relax: 20.5, end: 20.9, composition: "MERGE"}) //community
+					obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.2, start: 25.2, attackPeak: 26, relax: 26.5, end: 26.9, composition: "MERGE"}) //day
+					obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.3, start: 37, attackPeak: 38, relax: 38.9, end: 40, composition: "MERGE"}) //happy
+					obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.4, start: 58.4, attackPeak: 59.1, relax: 59.6, end: 60, composition: "MERGE"})//learning
+					obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.4, start: 61.2, attackPeak: 61.7, relax: 62.1, end: 63, composition: "MERGE"})//celebration
+				}
+				else if( msg.content.text.includes("Great"))
+				{
+					obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.25, start: 0.4, end: 1.2, composition: "MERGE"}) 
+
+				}
+				else if(msg.content.text.includes("name and surname"))
+				{
+					
+					this.tabRemote.sendMessage({type:"request_data", data: "person"});
+					
+					//if(this.start_recognition){ recognition.stop()}
+					//recognition_enabled = false;
+					this.nextState = WAITING;
+				}
 				
-				if(this.start_recognition){ recognition.stop()}
-				recognition_enabled = false;
+				else if(msg.content.text.includes("bye"))	
+				{	
+					// this.isFirstMsg = true;	
+					// this.start = false;	
+					// recognition_enabled = false	
+					// state = LS.Globals.WAITING;	
+					
+					this.nextState = REST;
+					if(this.start_recognition) recognition.stop();	
+					this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
+					this.isFirstMsg = true;
+					this.start = false;	
+					obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.3, start: 1.5, attackPeak: 1.8, relax: 2.8, end: 4, composition: "MERGE"})	
+				}	
+				else if(msg.content.text.includes("Sorry")){	
+					obj.data.push({type:"faceEmotion", emotion: "SURPRISE", amount:0.3, start: 0, attackPeak: 0.2, relax: 0.6, end: 1, composition: "MERGE"})	
+						
+				}
 			}
 			
-			
-	
-			if(msg.content.text == "See you next time, bye.")
-			{
-				this.isFirstMsg = true;
-				this.start = false;
-				recognition_enabled = false
-				state = LS.Globals.WAITING;
-				if(this.start_recognition) recognition.stop();
-				this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
-				obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.3, start: 1.6, attackPeak: 1.8, relax: 2.8, end: 4})
-			}
-			else if(msg.content.text &&msg.content.text.includes("Sorry")){
-				obj.data.push({type:"faceEmotion", emotion: "SURPRISE", amount:0.3, start: 0, attackPeak: 0.2, relax: 0.6, end: 1})
-				
-			}
 			console.log("message processed: " + msg.content)
 	
 					//show on character
@@ -354,7 +479,7 @@ var CORE = {
 			var LS = window.LS;
 	
 			var places = ["cafeteria", "bar", "library", "auditori","auditorium", "restaurant", "secretaria", "library", "550" ,"551", "552", "553","554"];
-			if(msg.content)
+			if(msg.content && msg.content.text)
 				for(var i in places)
 				{
 					var place = places[i];
@@ -366,11 +491,18 @@ var CORE = {
 						/*obj.data.push({type:"gesture",lexeme:"show", start:0, ready:1, strokeStart:1.5, end:3});*/
 						if(place=="secretaria")
 							place="550";
-						if(place=="auditorium")
+						else if(place=="auditorium")
 							place="auditori"
-						if(place == "bar" || place == "restaurant")	  //hardcoded
+						else if(place == "bar" || place == "restaurant")	  //hardcoded
 							place = "cafeteria";
-		
+						else if(place == "Tanger")
+						{
+							var idx = places.map((n)=>msg.content.text.toLowerCase().includes(n)).indexOf(true);
+							if(idx>-1)
+								place = places[idx];
+							else
+								continue;
+						}
 						var path = "https://dtic-recepcionist.upf.edu/recepcionista/imgs/mapa-"+ place + ".jpg";
 						var LSQ = window.LSQ;
 						LS.RM.load(path);
@@ -389,12 +521,15 @@ var CORE = {
 						}
 					}
 				}
-	
+			//LS.Globals.processMsg(JSON.stringify({type:'control',control: state}), true);
 			LS.Globals.processMsg(JSON.stringify(obj), true);
+			window.requestAnimationFrame(this.appLoop.bind(this));
 		/*}*/
 
 	}, 
-	processTabletMessage: function(message) // messages recieved from RecepcionistaDTIC Tablet
+
+	// messages recieved from RecepcionistaDTIC Tablet
+	processTabletMessage: function(message) 
 	{
 		// try to decode json (I assume that each message
 		// from server is json)
@@ -424,28 +559,46 @@ var CORE = {
 					{
 						//start_conversation
 						this.start = true;
-						this.appLoop()
+						this.state = REST
+						this.nextState = SPEAKING
+						window.requestAnimationFrame(this.appLoop.bind(this));
 					}
-					if(json.action == "mute")
+					else if(json.action == "mute")
 					{
 						//disable recognition in the app so it does not try to listen as the tablet is muted
 						mute = !mute;
-						recognition.stop()
+						if(mute) 
+							this.state = WAITING;
+						else 
+							this.state = LISTENING;
+
+						if(this.start_recognition) recognition.abort()
 						// Sennd ACK message to tablet to change styles, views...
 						if(this.tabRemote)
 						{
 							// console.log("Sending mute message");
 							this.tabRemote.sendMessage({type: "app_action", action: "mute_toggled" })
-													}
+							window.requestAnimationFrame(this.appLoop.bind(this));	
+						}
+					}
+					else if(json.action == "skip")
+					{
+						//Abort speech
+						//Send sth to nlp server
+						LS.Globals.abortSpeech();
+						this.userMessage("skip");
+						
 					}
 					break;
 				case "info":
 					if(json.data.includes("tablet disconnected")){
 						this.mindRemote.sendMessage( {type:"end", content:""} );
-						this.isFirstMsg = true;
-						this.start = false;
-						//if(this.start_recognition) recognition.stop()
-						recognition.stop()					}
+						// this.isFirstMsg = true;
+						// this.start = false;
+						/*this.nextState = REST;
+						window.requestAnimationFrame(this.appLoop.bind(this));*/
+						//recognition.stop()
+					}
 					break;
 			}
 		}
