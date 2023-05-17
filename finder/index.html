@@ -2,30 +2,15 @@
 <html>
 <title>Receptionist: Find info </title>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="./src/css/libs/w3.css">
-<link rel="stylesheet" href="./src/css/libs/font-awesome-4.7.0/css/font-awesome.min.css">
-<link rel="stylesheet" href="src/css/style.css">
-<style>
-body, html {
-  height: 100%;
-  font-family: "Inconsolata", sans-serif;
-  font-size: 25px;
-}
-* {
-        margin: 0;
-  }
-/* .bgimg {
-  background-position: center;
-  background-size: cover;
-  background-image: url("assets/logo.jpg");
-  min-height: 25%;
-} */
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<!-- <link rel="stylesheet" href="src/css/libs/w3.css"> -->
 
-.menu {
-  display: none;
-}
-</style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta2/css/all.min.css" integrity="sha512-YWzhKL2whUzgiheMoBFwW8CKV4qpHQAEuvilg9FAn5VJUDwKZZxkJNuGM4XkWuk94WCrrwslk8yWNGmY1EduTA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" /> -->
+<!-- <link rel="stylesheet" href="./src/css/libs/font-awesome-4.7.0/css/font-awesome.min.css"> -->
+<link rel="stylesheet" href="src/css/style.css">
 <body>
 
 <!-- Links (sit on top) -->
@@ -45,7 +30,7 @@ body, html {
     </div>
   </div>
 </div> -->
-<div id="dark-bkg"></div>
+<div id="dark-bg"></div>
 <!-- Header with image -->
 <!-- <header class="bgimg w3-display-container w3-grayscale-min" id="home"> -->
   <!-- <div class="w3-display-bottomleft w3-center w3-padding-large w3-hide-small">
@@ -61,8 +46,9 @@ body, html {
 
 <div class="w3-container" id="where" style="padding-bottom:32px; width:calc(100% - 30px); position:absolute;">
     
-  <div id='waiting-container'>Please, interact with Eva</div>
-  <div id="where-form" class="w3-content" style="visibility:hidden">
+    <div id='waiting-container' class="text-container">Press the button to talk with Eva</div>
+
+    <div id="where-form" class="w3-content" style="visibility:hidden">
     <h5 class="w3-center w3-padding-48"><span class="w3-tag w3-wide">Who are you looking for?</span></h5>
     <!--Make sure the form has the autocomplete function switched off:-->
         <!-- <form autocomplete="off" action="/action_page.php">
@@ -77,7 +63,7 @@ body, html {
                 <div id='building-toggle' class='column'>BUILDING</div>
             </div></p>-->
             <p> <div class="autocomplete" style="width:100%;">
-                <input id="myInput" type="text" name="input-data" placeholder="Search...">
+                <input id="myInput" type="text" name="input-data" placeholder="Search..." required>
                 </div>
             </p>
             <p><div id='send-btn' class="w3-button w3-black" >SEND</div></p>
@@ -90,15 +76,31 @@ body, html {
   <!--<button id="play-btn" class="w3-button w3-circle w3-big-button"><i id="play-btn" class="fa fa-play-circle w3-red-color" style="font-size:400px;"></i></button>-->
   <div id='buttons-container' class="w3-big-button">
     <i id="play-btn" class="fa fa-play-circle w3-red-color absolut" style="font-size:400px;"></i>
-    <i id="speech-btn" class="fa fa-microphone w3-red-color absolut" style="font-size:400px;visibility: hidden;"></i>
+    <div id = "speech-btn" class="w3-gray-color" style="visibility: hidden">
+      <i  class="fa fa-circle absolut" ></i>
+      <i  class="fa fa-microphone absolut micro" ></i>
+    </div>
     <div id='mute-container'>
-      <i id="mute-btn" class="fa fa-microphone-slash mute-button"></i>
+      <i id="mute-btn" class="fa fa-microphone-slash mute-button" style="visibility: hidden;"></i>
+    </div>
+    <div id='skip-container' style="visibility: hidden; display:none">	
+      <i id="skip-btn"class="fa fa-solid fa-circle w3-red-color absolut" style=""></i>	
+      <i id="skip-btn"class="fa fa-solid fa-forward absolut" style="color: white; font-size: 170px; padding: 80px 80px;"></i>	
+      <p style="color: rgb(232 48 138);
+        font-size: xxx-large;
+        justify-content: center;
+        bottom: 395px;
+        position: fixed;
+        padding-left: 82px;
+        display: block;">
+        Skip
+      </p>	
     </div>
   </div>
   
 </div>
 <!-- The Server Session Modal -->
-<div id="session" class="w3-center modal">
+<div id="session" class="w3-center modal" style="display: none;" >
   <!-- Modal content -->
   <div class="modal-content">
     <span id ="session-close" class="close">&times;</span>
@@ -109,7 +111,7 @@ body, html {
 </div>
 <div id="questionnaire">
   <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSc_fWSRn40zUxBiV9kaHPWm7eFJ585Tp1N75BR50yf9X7nfrw/viewform?embedded=true" onload = "onLoad(questionnaire_active)" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">S&#39;està carregant…</iframe>
-  <button id="cancel-questionnaire" onclick="goBack()"><i class="fa fa-arrow-left fa-sm"></i> Return</button>
+  <button id="cancel-questionnaire" onclick="goBack()"><i class="fa fa-chevron-left"></i> Return</button>
 </div>
 <div id="legalterms">
   <div id="legaltext">
@@ -118,11 +120,11 @@ body, html {
       speech to text software is being used; we keep a text log of the interaction, to improve the
       system. By clicking the Accept button, you agree with its usage, as well as with the usage of
       the system itself. Thanks!</p>
-      <p> <input type="checkbox" name="age"> <b>I confirm I am above 14 years old.</b></p>
-      <p> <input type="checkbox" name="gapi1"><b> I consent for my voice recording to be transferred to Google for voice transcription
-      in the terms described by Google API Services User Data Policy.</b></p>
-      <p> <input type="checkbox" name="gapi2"><b> I give Google a perpetual license to use my voice recordings in the terms described
-      by Google APIs Terms of Service.</b></p>
+      <p> <input type="checkbox" id="age"> <b>I confirm I am above 14 years old.</b></input></p>
+      <p> <input type="checkbox" id="gapi1"><b> I consent for my voice recording to be transferred to Google for voice transcription
+      in the terms described by Google API Services User Data Policy.</b></input></p>
+      <p> <input type="checkbox" id="gapi2"><b> I give Google a perpetual license to use my voice recordings in the terms described
+      by Google APIs Terms of Service.</b></input></p>
   </div>
   <div id="terms-btns">
     <button id="cancel-terms">Cancel</button>
@@ -132,16 +134,49 @@ body, html {
 
 
 <!-- Footer -->   
-<i id="play-btn" class="fa fa-play-circle w3-red-color absolut" style="font-size:400px;"></i>
+<footer class="w3-center w3-light-grey w3-padding-45 w3-large w3-text-center">
   <p>Beta version</p>
 </footer>
 
-<script  src="src/js/libs/xlsx.full.min.js"></script>
-<script	 src="src/js/vc_client_tab.js"></script>
-<script	 src="src/js/code.js"></script>
-<!--<script  src="https://apis.google.com/js/api.js"></script>-->
+<!-- <script async="false" src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" integrity="sha512-fD9DI5bZwQxOi7MhYWnnNPlvXdp/2Pj3XSTRrFs5FQa4mizyGLnJcN6tuvUS6LbmgN1ut+XGSABKvjN0H6Aoow==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+<script src="src/js/libs/xlsx.full.min.js"></script>
+<script	src="src/js/vc_client_tab.js"></script>
+<script	async="false" src="src/js/code.js"></script>
+<!-- <script async="false" src="src/js/gui.js"></script> -->
 <script>
-    initApp()
+  'use strict';
+
+var sequentialFileLoader = (() => {
+  var fileLength = 0;
+  var scriptListToImport = [];
+
+  function loadScriptAndExecuteCallback(i = 0) {
+    let myScript = document.createElement('script');
+    myScript.setAttribute('src', scriptListToImport[i]);
+    myScript.async = false;
+    document.body.appendChild(myScript);
+    if (i < fileLength - 1) {
+      myScript.onafterscriptexecute  = loadScriptAndExecuteCallback(i + 1);
+    }
+  }
+
+  function loadScript(scriptList) {
+    scriptListToImport = scriptList;
+    fileLength = scriptList.length;
+    loadScriptAndExecuteCallback();
+  }
+
+  return {
+    loadScript
+  };
+})();
+
+
+sequentialFileLoader.loadScript([
+"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/solid.min.js",
+  "src/js/code.js",
+  "src/js/gui.js"
+]);
 </script>
 </body>
 </html>

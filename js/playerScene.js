@@ -1,0 +1,989 @@
+import * as THREE from 'three';
+import Stats from './libs/stats.module.js';
+import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.16/+esm';
+
+import { OrbitControls } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/controls/OrbitControls.js';
+import { ShadowMapViewer } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/utils/ShadowMapViewer.js';
+import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/loaders/GLTFLoader.js';
+import { RGBELoader } from 'https://cdn.skypack.dev/three@0.136/examples/jsm/loaders/RGBELoader.js';
+import { DisplayUI } from './ui.js'
+import { ShaderManager } from './shaderManager.js'
+import { FXAAShader } from './libs/FXAAShader.js'
+
+import { CharacterController } from './controllers/characterController.js'
+// Correct negative blenshapes shader of ThreeJS
+THREE.ShaderChunk[ 'morphnormal_vertex' ] = "#ifdef USE_MORPHNORMALS\n	objectNormal *= morphTargetBaseInfluence;\n	#ifdef MORPHTARGETS_TEXTURE\n		for ( int i = 0; i < MORPHTARGETS_COUNT; i ++ ) {\n	    objectNormal += getMorph( gl_VertexID, i, 1, 2 ) * morphTargetInfluences[ i ];\n		}\n	#else\n		objectNormal += morphNormal0 * morphTargetInfluences[ 0 ];\n		objectNormal += morphNormal1 * morphTargetInfluences[ 1 ];\n		objectNormal += morphNormal2 * morphTargetInfluences[ 2 ];\n		objectNormal += morphNormal3 * morphTargetInfluences[ 3 ];\n	#endif\n#endif";
+THREE.ShaderChunk[ 'morphtarget_pars_vertex' ] = "#ifdef USE_MORPHTARGETS\n	uniform float morphTargetBaseInfluence;\n	#ifdef MORPHTARGETS_TEXTURE\n		uniform float morphTargetInfluences[ MORPHTARGETS_COUNT ];\n		uniform sampler2DArray morphTargetsTexture;\n		uniform vec2 morphTargetsTextureSize;\n		vec3 getMorph( const in int vertexIndex, const in int morphTargetIndex, const in int offset, const in int stride ) {\n			float texelIndex = float( vertexIndex * stride + offset );\n			float y = floor( texelIndex / morphTargetsTextureSize.x );\n			float x = texelIndex - y * morphTargetsTextureSize.x;\n			vec3 morphUV = vec3( ( x + 0.5 ) / morphTargetsTextureSize.x, y / morphTargetsTextureSize.y, morphTargetIndex );\n			return texture( morphTargetsTexture, morphUV ).xyz;\n		}\n	#else\n		#ifndef USE_MORPHNORMALS\n			uniform float morphTargetInfluences[ 8 ];\n		#else\n			uniform float morphTargetInfluences[ 4 ];\n		#endif\n	#endif\n#endif";
+THREE.ShaderChunk[ 'morphtarget_vertex' ] = "#ifdef USE_MORPHTARGETS\n	transformed *= morphTargetBaseInfluence;\n	#ifdef MORPHTARGETS_TEXTURE\n		for ( int i = 0; i < MORPHTARGETS_COUNT; i ++ ) {\n			#ifndef USE_MORPHNORMALS\n				transformed += getMorph( gl_VertexID, i, 0, 1 ) * morphTargetInfluences[ i ];\n			#else\n				transformed += getMorph( gl_VertexID, i, 0, 2 ) * morphTargetInfluences[ i ];\n			#endif\n		}\n	#else\n		transformed += morphTarget0 * morphTargetInfluences[ 0 ];\n		transformed += morphTarget1 * morphTargetInfluences[ 1 ];\n		transformed += morphTarget2 * morphTargetInfluences[ 2 ];\n		transformed += morphTarget3 * morphTargetInfluences[ 3 ];\n		#ifndef USE_MORPHNORMALS\n			transformed += morphTarget4 * morphTargetInfluences[ 4 ];\n			transformed += morphTarget5 * morphTargetInfluences[ 5 ];\n			transformed += morphTarget6 * morphTargetInfluences[ 6 ];\n			transformed += morphTarget7 * morphTargetInfluences[ 7 ];\n		#endif\n	#endif\n#endif";
+
+const TextureChunk = {
+    
+    get( matWType ) {
+        return this[ matWType ] ? "data/textures/" + this[ matWType ] : null;
+    },
+
+    'Hairmat.004@opacity': 'Woman_Hair_Opacity.png',
+    'Hairmat.004@ao': 'Woman_Hair_AmbientOcclusion.png',
+    'Bodymat.002@ao': 'Woman_Body_AmbientOcclusion.png',
+    'Topmat@ao': 'Woman_Top_AmbientOcclusion.png',
+    'Bottommat@ao': 'Woman_Bottom_AmbientOcclusion.png',
+    'Shoesmat@ao': 'Woman_Shoes_AmbientOcclusion.png',
+}
+
+const Vector3One = new THREE.Vector3( 1.0, 1.0, 1.0 );
+const V = [ 0.0064, 0.0516, 0.2719, 2.0062 ];
+const RGB = [
+        new THREE.Vector3( 0.2405, 0.4474, 0.6157 ), 
+        new THREE.Vector3( 0.1158, 0.3661, 0.3439 ), 
+        new THREE.Vector3( 0.1836, 0.1864, 0.0 ), 
+        new THREE.Vector3( 0.46, 0.0, 0.0402 )
+];
+
+let SM = null;
+let defaultSSSLevel = 0.4;
+
+class Player {
+
+    constructor(debug = false) {
+        
+        this.gui                = new GUI();
+        this.loaderGLB          = new GLTFLoader();
+        this.shaderManager      = new ShaderManager("data/shaders/");
+        this.clock              = new THREE.Clock(false);
+        this.textureLoader      = new THREE.TextureLoader();
+
+        this.debugShadowmaps    = false;
+        
+        this.ECAcontroller      = null;
+        this.eyesTarget         = null;
+        this.headTarget         = null;
+        this.neckTarget         = null;
+
+        this.body = null;
+        this.eyelashes = null;
+
+        // Shorter access
+        SM = this.shaderManager;
+
+        this.debug = debug;
+        this.gui.hide();
+    }
+    
+    async init() {
+
+        await SM.loadFromFile( "shaderChunk.a.glsl" );
+
+        this.initScene();
+        this.initLights();
+        this.initMisc();
+
+        // Behaviour Targets
+        this.eyesTarget = new THREE.Mesh( new THREE.SphereGeometry(0.5, 16, 16), new THREE.MeshPhongMaterial({ color: 0xffff00 , depthWrite: false }) );
+        this.eyesTarget.name = "eyesTarget";
+        this.eyesTarget.position.set(0, 2.5, 15); 
+        this.headTarget = new THREE.Mesh( new THREE.SphereGeometry(0.5, 16, 16), new THREE.MeshPhongMaterial({ color: 0xff0000 , depthWrite: false }) );
+        this.headTarget.name = "headTarget";
+        this.headTarget.position.set(0, 2.5, 15); 
+        this.neckTarget = new THREE.Mesh( new THREE.SphereGeometry(0.5, 16, 16), new THREE.MeshPhongMaterial({ color: 0x00fff0 , depthWrite: false }) );
+        this.neckTarget.name = "neckTarget";
+        this.neckTarget.position.set(0, 2.5, 15); 
+
+        this.scene.add(this.eyesTarget);
+        this.scene.add(this.headTarget);
+        this.scene.add(this.neckTarget);
+        // Load the model
+
+        this.loaderGLB.load( './data/meshes/Eva_Y.glb', (glb) => {
+
+            this.model = glb.scene;
+            this.model.rotateOnAxis( new THREE.Vector3(1, 0, 0), -Math.PI / 2 );
+            this.model.position.set(0, -8, 0);
+            this.model.scale.set(8, 8, 8);
+            
+            this.directionalLight.target = this.model;
+            this.directionalLight2.target = this.model;
+            this.spotLight.target = this.model;
+            
+            this.model.traverse( object => {
+                if ( object.isMesh || object.isSkinnedMesh ) {
+                    object.material.side = THREE.FrontSide;
+                    object.frustumCulled = false;
+                    object.castShadow = object.receiveShadow = true;
+                    if (object.name == "Eyelashes" || object.name == "Hair") {
+                        object.material.side = THREE.DoubleSide;
+                        object.castShadow = false;
+                    }
+                    if(object.material.map) object.material.map.anisotropy = 16; 
+                    
+                } else if (object.isBone) object.scale.set(1.0, 1.0, 1.0);
+            } );
+
+            this.prepareMaterials.bind(this)();
+            
+            this.initUI();
+
+            this.model.eyesTarget = this.eyesTarget;
+            this.model.headTarget = this.headTarget;
+            this.model.neckTarget = this.neckTarget;
+
+            this.ECAcontroller = new CharacterController( {character: this.model} );
+            this.ECAcontroller.start();
+            this.ECAcontroller.reset();
+            this.ECAcontroller.processMsg( JSON.stringify( { control: 2 } )); // speaking
+
+            //Load animation into the mixer
+            this.mixer = new THREE.AnimationMixer(this.model);
+
+            this.loaderGLB.load( './data/animations/idle.glb', (glb) => {
+                this.mixer.clipAction(glb.animations[0]).setEffectiveWeight(1.0).play();
+                this.model.getObjectByName("Armature").rotateOnAxis (new THREE.Vector3(1,0,0), Math.PI/2);
+                
+                this.clock.start();
+                this.animate();
+                
+                $('#loading').fadeOut();
+
+                if(this.onLoad)
+                    this.onLoad();
+            })
+        });
+        
+        window.addEventListener( 'resize', this.onWindowResize.bind(this) );
+    }
+
+    initScene() {
+
+        // Scene to render
+
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 100);
+
+        // To render textures to screen        
+
+        this.quad = new THREE.Mesh( new THREE.PlaneGeometry( 2,2 ) );
+        this.quad.name = "quad";
+        this.quad.receiveShadow = true;
+        this.scene.add( this.quad );
+
+        // To render screen quad
+
+        this.postCamera = new THREE.OrthographicCamera( - 1, 1, 1, - 1, 0, 1 );
+    }
+
+    initLights() {
+
+        // Scene lights
+
+        let dirLight = new THREE.DirectionalLight( 0xffffff, 0.9 );
+        dirLight.name = 'Directional';
+        dirLight.position.set( -23, 18, 30);
+        dirLight.castShadow = true;
+        dirLight.shadow.radius = 0.85;
+        dirLight.shadow.camera.near = 1;
+        dirLight.shadow.camera.far = 500;
+        dirLight.shadow.camera.right = 20;
+        dirLight.shadow.camera.left = - 20;
+        dirLight.shadow.camera.top	= 20;
+        dirLight.shadow.camera.bottom = - 20;
+        dirLight.shadow.mapSize.width = 4096;
+        dirLight.shadow.mapSize.height = 4096;
+        dirLight.shadow.bias = 0.00001;
+        dirLight.shadow.normalBias = 0.01;
+        this.directionalLight = dirLight;
+        this.scene.add( dirLight );
+
+        let dirLight2 = new THREE.DirectionalLight( 0xffffff, 0.8 );
+        dirLight2.name = 'Directional 2';
+        dirLight2.position.set( 5.5, 5, 16);
+        dirLight2.castShadow = true;
+        dirLight2.shadow.radius = 0.85;
+        dirLight2.shadow.camera.near = 1;
+        dirLight2.shadow.camera.far = 500;
+        dirLight2.shadow.camera.right = 20;
+        dirLight2.shadow.camera.left = - 20;
+        dirLight2.shadow.camera.top	= 20;
+        dirLight2.shadow.camera.bottom = - 20;
+        dirLight2.shadow.mapSize.width = 4096;
+        dirLight2.shadow.mapSize.height = 4096;
+        dirLight2.shadow.bias = 0.00001;
+        dirLight2.shadow.normalBias = 0.01;
+        this.directionalLight2 = dirLight2;
+        this.scene.add( dirLight2 );
+
+        let spotLight = new THREE.SpotLight( 0xffa95c, 1 );
+        spotLight.name = 'Spot';
+        spotLight.position.set( -8, 6, 3);
+        spotLight.castShadow = true;
+        spotLight.angle = Math.PI / 4;
+        spotLight.penumbra = 0.3;
+        spotLight.shadow.mapSize.width = 2048;
+        spotLight.shadow.mapSize.height = 2048;
+        spotLight.shadow.camera.near = 1;
+        spotLight.shadow.camera.far = 200;
+        this.spotLight = spotLight;
+        // this.scene.add( this.spotLight );
+
+        // To render shadowmap helpers in screen
+
+        this.shadowMapViewers = [
+            new ShadowMapViewer( this.directionalLight ),
+            new ShadowMapViewer( this.directionalLight2 ),
+            // new ShadowMapViewer( this.spotLight ),
+        ];
+        this.resizeShadowMapViewers();
+    }
+
+    initMisc() {
+
+        // Render stats
+        if(this.debug) {
+
+            this.stats = new Stats();
+            document.body.appendChild( this.stats.dom );
+        }
+
+        // Renderer
+
+        this.renderer = new THREE.WebGLRenderer( { antialias: true } );
+        this.renderer.setPixelRatio( window.devicePixelRatio );
+        this.renderer.setSize( window.innerWidth, window.innerHeight );
+        this.renderer.setClearColor( new THREE.Color( 0x222222 ) ) ;
+        this.renderer.shadowMap.enabled = true;
+		this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+
+        this.pmremGenerator = new THREE.PMREMGenerator( this.renderer );
+		this.pmremGenerator.compileEquirectangularShader();
+
+        this.enableShadowmaps = () => { this.renderer.shadowMap.enabled = true; }
+        this.disableShadowmaps = () => { this.renderer.shadowMap.enabled = false; }
+
+        document.body.appendChild( this.renderer.domElement );
+
+        this.renderer.domElement.tabIndex = '1';
+        this.renderer.domElement.onkeydown = (e) => {
+
+            
+            if( e.key === 'r' ) {
+                e.preventDefault();
+                this.updateMaterials();
+            }
+        }
+
+        // Load some assets
+
+        this.blackTexture = this.loadTexture( './data/textures/black.png' );
+        
+        // Camera orbit controls
+
+        // this.controls = new OrbitControls( this.camera, this.renderer.domElement );
+        // this.controls.object.position.set(0.0, 3.4, 8);
+        // this.controls.minDistance = 0.1;
+        // this.controls.maxDistance = 50;
+        // this.controls.target.set(0.0, 2.6, 0);
+
+        
+        this.controls = new OrbitControls( this.camera, this.renderer.domElement );
+        this.controls.object.position.set(0, 2, 17.5);
+        this.controls.minDistance = 0.1;
+        this.controls.maxDistance = 50;
+        this.controls.target.set(0, -0.95, 0.17);
+
+        // Environment
+
+        // new RGBELoader().setPath( 'data/hdrs/' ).load( 'cafe.hdr', t => {
+
+        //     this.cubeRenderTarget = this.pmremGenerator.fromEquirectangular( t );
+        //     this.scene.background = this.cubeRenderTarget.texture;
+
+        //     t.dispose();
+
+        //     this.boxMesh = new THREE.Mesh(
+        //         new THREE.BoxGeometry( 5, 5, 5 ),
+        //         new THREE.ShaderMaterial( {
+        //             name: 'GbufferBackgroundCubeMaterial',
+        //             uniforms: THREE.UniformsUtils.merge( [
+        //                 THREE.UniformsUtils.clone( THREE.ShaderLib.cube.uniforms ),
+        //                 {
+        //                     envMap: { value: this.cubeRenderTarget.texture },
+        //                 }
+        //             ] ),
+        //             vertexShader: THREE.ShaderLib.cube.vertexShader,
+        //             fragmentShader: SM.get( 'gBufferCubeFrag' ),
+        //             side: THREE.BackSide,
+        //             depthTest: false,
+        //             depthWrite: false,
+        //             fog: false
+        //         } )
+        //     );
+
+        //     Object.defineProperty( this.boxMesh.material, 'envMap', {
+
+        //         get: function () {
+        //             return this.uniforms.envMap.value;
+        //         }
+
+        //     } );
+    
+        //     this.boxMesh.geometry.deleteAttribute( 'normal' );
+        //     this.boxMesh.geometry.deleteAttribute( 'uv' );
+    
+        //     this.boxMesh.onBeforeRender = function ( renderer, scene, camera ) {
+        //         this.matrixWorld.copyPosition( camera.matrixWorld );
+        //     };
+    
+        //     this.scene.add( this.boxMesh );
+        // } );
+
+        // Deferred targets
+
+        this.prepareRenderTargets();
+    }
+
+    initUI() {
+
+        if(!this.debug) 
+            return;
+
+        const gui = this.gui;
+        
+        gui.show();
+        gui.title("Scene")
+
+        const errorFunc = console.error;
+        console.error = () => {};
+
+        gui.add( this, 'debugShadowmaps' );
+
+        let tOutput = {
+            'FXAA Input': 'gamma',
+            'sssLevel': defaultSSSLevel
+        };
+
+        gui.add( tOutput, 'FXAA Input', [ 'lights', 'Hblur', 'Vblur', 'gamma' ] ).onChange( v => {
+            switch(v) {
+                case 'lights': this.fxaaMaterial.uniforms[ 'tDiffuse' ].value = this.renderTargetLights.texture[ 0 ]; break;
+                case 'Hblur': this.fxaaMaterial.uniforms[ 'tDiffuse' ].value = this.renderTargetHblur.texture[ 0 ]; break;
+                case 'Vblur': this.fxaaMaterial.uniforms[ 'tDiffuse' ].value = this.renderTargetVblur.texture[ 0 ]; break;
+                case 'gamma': this.fxaaMaterial.uniforms[ 'tDiffuse' ].value = this.renderTargetGamma.texture[ 0 ]; break;
+            }
+        } );
+
+        gui.add( tOutput, 'sssLevel', 0, 5, 0.01).name( 'SSS Level' ).onChange( v => {
+            this.hBlurMaterial.uniforms[ 'sssLevel' ].value = v;
+            this.vBlurMaterial.uniforms[ 'sssLevel' ].value = v;
+        } );
+
+        function CreateObjectUI( folder, object, isUniform ) {
+            for( const p in object ) {
+                const value = isUniform ? object[ p ].value : object[ p ];
+                if( value === undefined 
+                    || value === null
+                    || value.constructor === Function 
+                    || value.constructor === Array 
+                    || value.constructor === THREE.Matrix3 
+                    || value.constructor === THREE.Matrix4
+                    || value.constructor === THREE.Quaternion 
+                    || value.constructor === THREE.Vector4 ) continue;
+
+                let dataObject = isUniform ? object[ p ] : object;
+                if( !dataObject._ui_tmp ) dataObject._ui_tmp = {}; 
+
+                const r = DisplayUI[ p ];
+                if( r ) {
+                    if( isUniform )
+                        folder.add( dataObject, 'value', r.min, r.max, r.step ).name( p );       
+                    else
+                        folder.add( dataObject, p, r.min, r.max, r.step );
+                    continue;
+                } else if( DisplayUI.Off( p ) ) continue;
+                else if ( DisplayUI.IsCombo( p ) ) {
+                    folder.add( object, p, DisplayUI.combos[ p ] ).onChange( v => { object[ p ] = v; });
+                    continue;
+                }
+
+                switch( value.constructor ) {
+
+                    case Object:
+                        if( Object.keys( value ).length )
+                            CreateObjectUI( folder.addFolder( p ), value, p === 'uniforms' )
+                        continue;
+                    case Number: // default number, add it to display ui if necessary
+                        if( isUniform )
+                            folder.add( dataObject, 'value', 0, 1, 0.01 ).name( p );        
+                        else
+                            folder.add( dataObject, p, 0, 1, 0.01 );        
+                        continue;
+                    case THREE.Color: // default number, add it to display ui if necessary
+                        folder.addColor( dataObject, p );        
+                        continue;
+                    case THREE.Euler:
+                    case THREE.Vector3:
+
+                        if( isUniform ) continue;
+
+                        if( !dataObject._ui_tmp[ p ] ) {
+                            dataObject._ui_tmp[ p ] = {
+                                x:  dataObject[ p ].x,
+                                y:  dataObject[ p ].y,
+                                z:  dataObject[ p ].z,
+                                f: folder.addFolder( p )
+                            };
+                        }
+                        
+                        const dataFolder = dataObject._ui_tmp[ p ].f;
+                        dataFolder.add( dataObject._ui_tmp[ p ], 'x' ).onChange( v => { dataObject[ p ].set( v, dataObject[ p ].y, dataObject[ p ].z ); } );
+                        dataFolder.add( dataObject._ui_tmp[ p ], 'y' ).onChange( v => { dataObject[ p ].set( dataObject[ p ].x, v, dataObject[ p ].z ); } );
+                        dataFolder.add( dataObject._ui_tmp[ p ], 'z' ).onChange( v => { dataObject[ p ].set( dataObject[ p ].x, dataObject[ p ].z, v ); } );
+                        dataFolder.close();
+                        continue;
+                }
+
+                folder.add( dataObject, p );
+            }
+
+            return folder;
+        }
+
+        CreateObjectUI( gui.addFolder( 'Camera' ), this.camera ).close();
+
+        const directionalLight = gui.addFolder( 'DirectionalLight' )
+        CreateObjectUI( directionalLight, this.directionalLight ).close();
+        CreateObjectUI( directionalLight.addFolder( 'Shadow' ), this.directionalLight.shadow );
+        CreateObjectUI( directionalLight.addFolder( 'Camera' ), this.directionalLight.shadow.camera );
+
+        CreateObjectUI( gui.addFolder( 'DirectionalLight2' ), this.directionalLight2 ).close();
+
+        // const spotLight = gui.addFolder( 'SpotLight' )
+        // CreateObjectUI( spotLight, this.spotLight ).close();
+        // CreateObjectUI( spotLight.addFolder( 'Shadow' ), this.spotLight.shadow );
+        // CreateObjectUI( spotLight.addFolder( 'Camera' ), this.spotLight.shadow.camera );
+
+        CreateObjectUI( gui.addFolder( 'Deferred Material' ), this.deferredLightingMaterial ).close();
+        CreateObjectUI( gui.addFolder( 'HBlur Material' ), this.hBlurMaterial ).close();
+        CreateObjectUI( gui.addFolder( 'VBlur Material' ), this.vBlurMaterial ).close();
+        CreateObjectUI( gui.addFolder( 'Acc Material' ), this.accMaterial ).close();
+
+        console.error = errorFunc;
+    }
+
+    animate() {
+        
+        requestAnimationFrame( this.animate.bind(this) );
+        let dt = this.clock.getDelta();
+        let et = this.clock.getElapsedTime();
+
+        if( this.mixer )
+            this.mixer.update(dt*0.3);
+
+        if( this.ECAcontroller )
+            this.ECAcontroller.update(dt, et); 
+
+        this.render();
+        this.controls.update();
+        
+        if(this.debug)
+            this.stats.update();
+    }
+
+    render() {
+
+        
+        // Render model
+        
+        this.updateUniforms();
+        this.enableShadowmaps();
+        this.applyLayer( this.quad, 0 );
+        // this.applyLayer( this.boxMesh, 1 );
+        this.applyLayer( this.model, 1 );
+        
+        this.renderer.setRenderTarget( this.renderTargetDef );
+        this.renderer.render( this.scene, this.camera );
+
+        // Render screen quad
+
+        this.disableShadowmaps();
+        this.applyLayer( this.quad, 1 );
+        this.applyLayer( this.model, 0 );
+        // this.applyLayer( this.boxMesh, 0 );
+        
+        // Apply lighting
+
+        this.useQuadMaterial( this.deferredLightingMaterial );
+        this.setRenderTarget( this.renderTargetLights );
+
+        if( this.debugShadowmaps ) 
+            this.toScreen();
+
+        this.renderer.render( this.scene, this.postCamera );
+
+        // Debug: Show Lights Shadowmap
+
+        if( this.debugShadowmaps ) {
+            for( const viewer of this.shadowMapViewers )
+                viewer.render( this.renderer );
+            return;
+        }
+        
+        this.renderer.autoClear = false;
+
+        let irradianceMap = this.renderTargetLights.texture[ 0 ];
+        
+        for(let i = 0, pv = 0; i < V.length; i++) {
+                
+            var width = Math.sqrt( V[i] - pv );
+            pv = V[ i ];
+
+            this.blurStep( 'h', width, irradianceMap );
+            
+            this.blurStep( 'v', width, this.renderTargetHblur.texture[ 0 ] );
+
+            this.accumulateStep( this.renderTargetVblur.texture[ 0 ], RGB[ i ], THREE.OneMinusDstAlphaFactor, (i == 0) );
+
+            irradianceMap = this.renderTargetVblur.texture[ 0 ];
+        }
+
+        this.accumulateStep( this.renderTargetLights.texture[ 1 ], Vector3One, THREE.OneFactor);
+
+        // Final FX
+
+        this.renderer.autoClear = true;
+        this.useQuadMaterial( this.gammaMaterial );
+        this.setRenderTarget( this.renderTargetGamma );
+        this.renderer.render( this.scene, this.postCamera );
+        
+        // Apply antialiasing
+
+        this.useQuadMaterial( this.fxaaMaterial );
+        this.toScreen();
+        this.renderer.render( this.scene, this.postCamera );
+    }
+
+    blurStep( type, width, map ) {
+        let material = type === 'h' ? this.hBlurMaterial : this.vBlurMaterial;
+        this.useQuadMaterial( material );
+        material.uniforms.width.value = width;
+        if( map ) material.uniforms.irradianceMap.value = map;
+        this.setRenderTarget( type === 'h' ? this.renderTargetHblur : this.renderTargetVblur );
+        this.renderer.render( this.scene, this.postCamera );
+    }
+
+    accumulateStep( colorMap, weight, blendDst, clear ) {
+
+        if( blendDst !== undefined ) 
+            this.accMaterial.blendDst = blendDst;
+        else
+            this.accMaterial.blending = THREE.NoBlending;
+
+        this.useQuadMaterial( this.accMaterial );
+        this.quad.material.uniforms.colorMap.value = colorMap;
+        this.quad.material.uniforms.weight.value = weight;
+        this.setRenderTarget( this.renderTargetAcc );
+        if(clear) this.renderer.clearColor();
+        this.renderer.render( this.scene, this.postCamera );
+    }
+
+    useQuadMaterial( material ) {
+        this.quad.material = material;
+    }
+
+    prepareMaterials() {
+
+        // Create Deferred and SSS Materials
+
+        let bodyMaterial = this.model.getObjectByName("Body").material.clone();
+
+        const uniforms = Object.assign( THREE.UniformsUtils.clone( THREE.UniformsLib.lights ), {
+            map:  { type: 't', value: bodyMaterial.map },
+            normalMap:  { type: "t", value: bodyMaterial.normalMap },
+            specularMap:  { type: "t", value: this.loadTexture( './data/textures/Woman_Body_Specular.png' ) },
+            aoMap:  { type: "t", value: this.loadTexture( './data/textures/Woman_Body_AmbientOcclusion.png' ) },
+            sssMap:  { value: this.loadTexture( './data/textures/Woman_Body_SSS.png' ) },
+            uvTransform: { type: "matrix4", value: bodyMaterial.map.matrix }
+        } );
+
+        const gBufferConfig = {
+            name: "gBuffer",
+            uniforms: uniforms,
+            vertexShader: SM.get( 'gBufferVert' ),
+            fragmentShader: SM.get('gBufferFrag'),
+            lights: true,
+            colorWrite: true,
+            glslVersion: THREE.GLSL3,
+            defines: { IS_BODY: 1 }
+        };
+
+        let gBufferMaterial = new THREE.ShaderMaterial( gBufferConfig );
+        let gBufferTransparentMaterial =  new THREE.ShaderMaterial( Object.assign( gBufferConfig, { 
+            name: 'gBufferTransparent',
+            transparent: true, 
+            depthWrite: false, 
+            blending: THREE.NormalBlending,
+            side: THREE.DoubleSide,
+            defines: { SKIP_NORMALS: 1 }
+        } ));
+
+        gBufferMaterial.extensions.drawBuffers = true;
+        gBufferMaterial.extensions.derivatives = true;
+        gBufferTransparentMaterial.extensions.drawBuffers = true;
+        gBufferTransparentMaterial.extensions.derivatives = true;
+        
+        this.model.name = 'Model';
+        this.scene.add(this.model);
+
+        for( const obj of this.scene.getObjectByName('Armature').children ) {
+            if(!obj.material)
+            continue; 
+            if(obj.name !== 'Eyes' && obj.material.name.includes( 'Bodymat' ))
+                obj.material = obj.name === 'Eyelashes' ? gBufferTransparentMaterial : gBufferMaterial;
+            else {
+                obj.material = this.createGBufferMaterialFromSrc( obj.material );
+            }
+        }
+
+        let inverseViewProjection = new THREE.Matrix4();
+
+        this.deferredLightingMaterial = new THREE.ShaderMaterial( {
+            name: 'deferredLighting',
+            vertexShader: SM.get( 'quadVert' ),
+            fragmentShader: SM.get( 'deferredFinal' ),
+            uniforms: Object.assign( THREE.UniformsUtils.clone( THREE.UniformsLib.lights ), {
+                map: { type: 't', value: this.renderTargetDef.texture[ 0 ] },
+                positionMap: { value: this.renderTargetDef.texture[ 1 ] },
+                normalMap: { value: this.renderTargetDef.texture[ 2 ] },
+                detailedNormalMap: { value: this.renderTargetDef.texture[ 3 ] },
+                depthMap: { value: this.renderTargetDef.depthTexture },
+                transmitanceLut: { value: this.loadTexture( './data/textures/transmitance_lut.png' , {
+                    wrapS: THREE.ClampToEdgeWrapping, wrapT: THREE.ClampToEdgeWrapping
+                })},
+                specularIntensity: { type: 'number', value: 5 },
+                ambientIntensity: { type: 'number', value: 0.1 },
+                shadowShrinking: { type: 'number', value: 0.0 },
+                translucencyScale: { type: 'number', value: 0.43 },
+                ambientLightColor:  {type: 'vec3', value: Vector3One },
+                cameraNear: { value : this.camera.near },
+                cameraFar: { value : this.camera.far },
+                cameraEye: { value : this.camera.position },
+                viewProjectionInverse: { value: inverseViewProjection.multiplyMatrices( this.camera.matrixWorldInverse, this.camera.projectionMatrix ).invert() }
+            } ),
+            depthTest: false,
+            lights: true,
+            glslVersion: THREE.GLSL3
+        });
+
+        this.hBlurMaterial = new THREE.ShaderMaterial( {
+            vertexShader: SM.get( 'quadVert' ),
+            fragmentShader: SM.get( 'horizontalBlur' ),
+            uniforms: {
+                irradianceMap: { value: this.renderTargetLights.texture[ 0 ] },
+                depthMap: { value: this.renderTargetLights.texture[ 2 ] },
+                sssLevel: { value: defaultSSSLevel },
+                correction: { value: 1000 },
+                maxdd: { value: 0.001 },
+                invPixelSize: { value: [1 / this.renderTargetLights.texture[ 0 ].image.width, 1 / this.renderTargetLights.texture[ 0 ].image.height] },
+                width: { value: 0.0 },
+                cameraNear: { value : this.camera.near },
+                cameraFar: { value : this.camera.far }
+            },
+            depthTest: false,
+            blending: THREE.NoBlending,
+            glslVersion: THREE.GLSL3
+        });
+
+        this.vBlurMaterial = new THREE.ShaderMaterial( {
+            vertexShader: SM.get( 'quadVert' ),
+            fragmentShader: SM.get( 'verticalBlur' ),
+            uniforms: {
+                irradianceMap: { value: this.renderTargetHblur.texture[ 0 ] },
+                depthMap: { value: this.renderTargetLights.texture[ 2 ] },
+                sssLevel: { value: defaultSSSLevel },
+                correction: { value: 800 },
+                maxdd: { value: 0.001 },
+                invPixelSize: { value: [1 / this.renderTargetLights.texture[ 0 ].image.width, 1 / this.renderTargetLights.texture[ 0 ].image.height] },
+                width: { value: 0.0 },
+                cameraNear: { value : this.camera.near },
+                cameraFar: { value : this.camera.far },
+            },
+            depthTest: false,
+            blending: THREE.NoBlending,
+            glslVersion: THREE.GLSL3
+        });
+
+        this.accMaterial = new THREE.ShaderMaterial( {
+            vertexShader: SM.get( 'quadVert' ),
+            fragmentShader: SM.get( 'accumulativeStep' ),
+            uniforms: {
+                colorMap: { value: this.renderTargetLights.texture[ 0 ] },
+                depthMap: { value: this.renderTargetLights.texture[ 2 ] },
+                weight: { value: Vector3One },
+            },
+            depthTest: false,
+            blending: THREE.CustomBlending,
+            blendSrc: THREE.OneMinusSrcAlphaFactor,
+            glslVersion: THREE.GLSL3
+        });
+
+        this.gammaMaterial = new THREE.ShaderMaterial( {
+            vertexShader: SM.get( 'quadVert' ),
+            fragmentShader: SM.get( 'gammaCorrection' ),
+            uniforms: { colorMap: { value: this.renderTargetAcc.texture[ 0 ] } },
+            depthTest: false,
+            blending: THREE.NoBlending,
+            glslVersion: THREE.GLSL3
+        });
+
+        FXAAShader.uniforms[ 'resolution' ].value = new THREE.Vector2(
+            1 / ( window.innerWidth * this.renderer.getPixelRatio() ),
+            1 / ( window.innerHeight* this.renderer.getPixelRatio() )
+        );
+        FXAAShader.uniforms[ 'tDiffuse' ].value = this.renderTargetGamma.texture[ 0 ];
+        FXAAShader.depthTest = false;
+        FXAAShader.blending = THREE.NoBlending;
+        this.fxaaMaterial = new THREE.ShaderMaterial( FXAAShader );
+        
+    }
+
+    updateUniforms() {
+
+        // Deferred
+
+        this.deferredLightingMaterial.uniforms['cameraNear'].value = this.camera.near;
+        this.deferredLightingMaterial.uniforms['cameraFar'].value = this.camera.far;
+    }
+
+    async updateMaterials() {
+
+        await this.shaderManager.reload();
+
+        // GBuffer materials
+
+        for( const obj of this.scene.getObjectByName('Armature').children ) {
+            if(!obj.material)
+            continue; 
+            obj.material.fragmentShader = SM.get( 'gBufferFrag' );
+        }
+
+        // Quad materials
+
+        this.deferredLightingMaterial.fragmentShader = SM.get( 'deferredFinal' );
+        this.hBlurMaterial.fragmentShader = SM.get( 'horizontalBlur' );
+        this.vBlurMaterial.fragmentShader = SM.get( 'verticalBlur' );
+        this.accMaterial.fragmentShader = SM.get( 'accumulativeStep' );
+        this.gammaMaterial.fragmentShader = SM.get( 'gammaCorrection' );
+    }
+
+    prepareRenderTargets() {
+
+        // Deferred: First pass
+
+        this.renderTargetDef = new THREE.WebGLMultipleRenderTargets(
+            window.innerWidth * window.devicePixelRatio,
+            window.innerHeight * window.devicePixelRatio,
+            4
+        );
+
+        for ( let i = 0, il = this.renderTargetDef.texture.length; i < il; i ++ ) {
+            this.renderTargetDef.texture[ i ].minFilter = THREE.NearestFilter;
+            this.renderTargetDef.texture[ i ].magFilter = THREE.NearestFilter;
+            this.renderTargetDef.texture[ i ].type = THREE.FloatType;
+        }
+
+        this.renderTargetDef.depthTexture = new THREE.DepthTexture(
+            window.innerWidth * window.devicePixelRatio,
+            window.innerHeight * window.devicePixelRatio,
+            THREE.FloatType // Keep in sync with RT textures
+        );
+
+        this.renderTargetDef.texture[ 0 ].name = 'pc_fragColor0';
+        this.renderTargetDef.texture[ 1 ].name = 'pc_fragColor1';
+        this.renderTargetDef.texture[ 2 ].name = 'pc_fragColor2';
+        this.renderTargetDef.texture[ 3 ].name = 'pc_fragColor3';
+
+        // Deferred: Light pass
+
+        this.renderTargetLights = new THREE.WebGLMultipleRenderTargets(
+            window.innerWidth * window.devicePixelRatio,
+            window.innerHeight * window.devicePixelRatio,
+            3
+        );
+
+        for ( let i = 0, il = this.renderTargetLights.texture.length; i < il; i ++ ) {
+
+            this.renderTargetLights.texture[ i ].minFilter = THREE.NearestFilter;
+            this.renderTargetLights.texture[ i ].magFilter = THREE.NearestFilter;
+            this.renderTargetLights.texture[ i ].type = THREE.FloatType;
+        }
+
+        this.renderTargetLights.texture[ 0 ].name = 'pc_fragLight';
+        this.renderTargetLights.texture[ 1 ].name = 'pc_fragTransmitance';
+        this.renderTargetLights.texture[ 2 ].name = 'pc_fragDepth';
+
+        // Blur passes: Horizontal
+
+        this.renderTargetHblur = new THREE.WebGLMultipleRenderTargets(
+            window.innerWidth * window.devicePixelRatio,
+            window.innerHeight * window.devicePixelRatio,
+            1
+        );
+
+        for ( let i = 0, il = this.renderTargetHblur.texture.length; i < il; i ++ ) {
+
+            this.renderTargetHblur.texture[ i ].minFilter = THREE.NearestFilter;
+            this.renderTargetHblur.texture[ i ].magFilter = THREE.NearestFilter;
+            this.renderTargetHblur.texture[ i ].type = THREE.FloatType;
+        }
+
+        this.renderTargetHblur.texture[ 0 ].name = 'pc_fragDataH';
+
+        // Blur passes: Vertical
+
+        this.renderTargetVblur = new THREE.WebGLMultipleRenderTargets(
+            window.innerWidth * window.devicePixelRatio,
+            window.innerHeight * window.devicePixelRatio,
+            1
+        );
+
+        for ( let i = 0, il = this.renderTargetVblur.texture.length; i < il; i ++ ) {
+
+            this.renderTargetVblur.texture[ i ].minFilter = THREE.NearestFilter;
+            this.renderTargetVblur.texture[ i ].magFilter = THREE.NearestFilter;
+            this.renderTargetVblur.texture[ i ].type = THREE.FloatType;
+        }
+
+        this.renderTargetVblur.texture[ 0 ].name = 'pc_fragDataV';
+
+        // SSS: Accumulate passes
+
+        this.renderTargetAcc = new THREE.WebGLMultipleRenderTargets(
+            window.innerWidth * window.devicePixelRatio,
+            window.innerHeight * window.devicePixelRatio,
+            1
+        );
+
+        for ( let i = 0, il = this.renderTargetAcc.texture.length; i < il; i ++ ) {
+
+            this.renderTargetAcc.texture[ i ].minFilter = THREE.NearestFilter;
+            this.renderTargetAcc.texture[ i ].magFilter = THREE.NearestFilter;
+            this.renderTargetAcc.texture[ i ].type = THREE.FloatType;
+        }
+
+        this.renderTargetAcc.texture[ 0 ].name = 'pc_finalColor';
+
+         // SSS: Gamma passes
+
+         this.renderTargetGamma = new THREE.WebGLMultipleRenderTargets(
+            window.innerWidth * window.devicePixelRatio,
+            window.innerHeight * window.devicePixelRatio,
+            1
+        );
+
+        for ( let i = 0, il = this.renderTargetGamma.texture.length; i < il; i ++ ) {
+
+            this.renderTargetGamma.texture[ i ].minFilter = THREE.NearestFilter;
+            this.renderTargetGamma.texture[ i ].magFilter = THREE.NearestFilter;
+            this.renderTargetGamma.texture[ i ].type = THREE.FloatType;
+        }
+
+        this.renderTargetGamma.texture[ 0 ].name = 'pc_Color';
+    }
+
+    createGBufferMaterialFromSrc( mat ) {
+
+        // Create THREE Shader Material from original GLB material
+
+        console.log( mat.name );
+
+        const materialConfig = {
+            name: mat.name,
+            uniforms: Object.assign( THREE.UniformsUtils.clone( THREE.UniformsLib.lights ), {
+                map:  { type: 't', value: mat.map },
+                normalMap:  { type: "t", value: mat.normalMap },
+                sssMap: { type: 't', value: this.blackTexture },
+                specularMap: { type: 't', value: mat.metalnessMap },
+                uvTransform: { type: "matrix4", value: mat.map.matrix }
+            } ),
+            vertexShader: SM.get( 'gBufferVert' ),
+            fragmentShader: SM.get( 'gBufferFrag' ),
+            lights: true,
+            colorWrite: true,
+            glslVersion: THREE.GLSL3,
+            side: mat.side,
+            // transparent: mat.transparent,
+            defines: {}
+        };
+
+        if(materialConfig.transparent) {
+            // const textureName = TextureChunk.get( mat.name + "@opacity" );
+            // materialConfig.uniforms[ "alphaMap" ] = { type: 't', value: this.loadTexture( textureName ) };
+            // materialConfig.defines[ 'ALPHA_TEST' ] = 1;
+        }
+
+        // Add ao map
+        const textureName = TextureChunk.get( mat.name + "@ao" );
+        if( textureName ) {
+            materialConfig.uniforms[ "aoMap" ] = { type: 't', value: this.loadTexture( textureName ) };
+            materialConfig.defines[ 'USE_AO' ] = 1;
+        }
+
+        return new THREE.ShaderMaterial( materialConfig );
+    }
+
+    applyLayer( object, mask ) {
+
+        // Hide or show object
+
+        object.layers.mask = mask;
+        object.traverse( child => {
+            child.layers.mask = mask;
+        } );
+    }
+
+    loadTexture( path, parameters = {} ) {
+        const texture = this.textureLoader.load( path, parameters.onload );
+        texture.wrapS = parameters.wrapS || THREE.RepeatWrapping;
+        texture.wrapT = parameters.wrapT || THREE.RepeatWrapping;
+        texture.minFilter = parameters.minFilter || THREE.LinearMipmapLinearFilter;
+        texture.magFilter = parameters.magFilter || THREE.LinearFilter;
+        texture.flipY = parameters.flip;
+        return texture;
+    }
+
+    setRenderTarget( rt ) {
+        this.renderer.setRenderTarget( rt );
+    }
+
+    toScreen() {
+        this.renderer.setRenderTarget( null );
+    }
+
+    resizeShadowMapViewers( width ) {
+
+        const uWidth = width || window.innerWidth;
+        const size = uWidth * 0.1;
+
+        for( const viewer of this.shadowMapViewers ) {
+            viewer.size.set( size, size );
+            viewer.position.set( 10, 60 + this.shadowMapViewers.indexOf( viewer ) * size * 1.1 );
+        }
+    }
+
+    onWindowResize() {
+
+        const width  = window.innerWidth;
+        const height = window.innerHeight;
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize( width, height );
+        this.resizeShadowMapViewers( width );
+
+        for( const viewer of this.shadowMapViewers )
+            viewer.updateForWindowResize();
+    }
+
+}
+
+// let player = new Player();
+// player.init();
+// window.player = player;
+
+export { Player };

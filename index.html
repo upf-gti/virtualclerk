@@ -12,13 +12,23 @@
 <title>Virtual Clerk</title>
 	<style type='text/css'></style>
 	<link rel="stylesheet" type="text/css" href="./css/style.css">
+	<script src="js/libs/jquery-3.5.0.min.js"></script>
+	<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+	<script type="importmap">
+		{
+			"imports": {
+				"three": "https://cdn.skypack.dev/three@0.136"
+			}
+		}
+	</script>
 </head>
 <body>
-	<div id="main" >
-		<div id="character"></div>
+	<div id="loading" class="modal" style="background-color:rgba(51, 51, 51, 0.5); position: absolute; width: 100%; height: 100%; 
+			display: flex; justify-content: center; align-items: center; z-index: 100; color: white; font-size: larger;">
+		<p>Loading avatar, please wait</p>
 	</div>
 	<!-- The Modal -->
-	<div id="reconnecting" class="modal">
+	<div id="reconnecting" class="modal" style="display: none;">
 	  <!-- Modal content -->
 	  <div class="modal-content">
 		<span id = "reconnecting-close" class="close">&times;</span>
@@ -26,7 +36,7 @@
 	  </div>
 	</div>
 	<!-- The Server Session Modal -->
-	<div id="session" class="modal">
+	<div id="session" class="modal" style="display: none;">
 		<!-- Modal content -->
 		<div class="modal-content">
 		  <span id ="session-close" class="close">&times;</span>
@@ -35,17 +45,25 @@
 		  <button id="btn-session">Connect</button>
 		</div>
 	</div>
-	<script  src="https://apis.google.com/js/api.js"></script>
+	<div id ="img-container" style = "display: block;
+		z-index: 1;
+		position: absolute;
+		bottom: 1%;
+		right: 1%;">
+		<img id = "img" width = "125" src = "">
+	</div>
 	<script type="text/javascript" src="scene/js/extra/gl-matrix-min.js"></script>
 	<script type="text/javascript" src="scene/js/extra/litegl.js"></script>
 	<script type="text/javascript" src="scene/js/extra/litegraph.js"></script>
 	<script type="text/javascript" src="scene/js/extra/litescene.js"></script>
-	<script type="text/javascript" src="code.js"></script>
-	<script type="text/javascript" src="mind.js"></script>
+	<script type="text/javascript" src="scene/js/extra/Canvas2DtoWebGL.js"></script>
+	<!-- <script type="text/javascript" src="code.js"></script>
+	<script type="text/javascript" src="mind.js"></script> -->
 	<!--<script type="text/javascript" src="./dialogflow/mindDialogFlow.js"></script>-->
-	<script type="text/javascript">
-		CORE.init();
+	<!-- <script type="text/javascript">
+		APP.init();
 
-	</script>
+	</script> -->
+	<script src="./js/app.js" type="module"></script>
 </body>
 </html>

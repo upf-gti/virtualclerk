@@ -4,54 +4,40 @@ var BUILDING_TYPE  = false;
 
 var data_ready = false;
 
-var persons_json = {};
-var groups_json = {};
-var buildings_json = {};
-
 var person_names_list = [];
 var person_surnames_list = [];
 var groups_list = [];
 var buildings_list = [];
 var current_data_source = person_names_list;
 
-var muted = false;
-
-var URL_PEOPLE = "https://drive.google.com/file/d/1R7Psnyfxj9qYtE9Qli6JXR3ehj25NTtj/view?usp=sharing"//"https://webglstudio.org/users/dmoreno/projects/finder/fields.xlsx";
-var URL_GROUPS =  "https://drive.google.com/file/d/1ar4j46cg-Ftxix4XZhO-IBepnXkJnMwI/view?usp=sharing"
-var URL_BUILDINGS =  "https://drive.google.com/file/d/1h3itEf8YwZP2pdDa0gZK-9D1N5E0zcyg/view?usp=sharing"
-
-/* For Google API*/
-var CLIENT_ID = '566335008510-hd8865t1fvvn92gnooo39mg78d88mfhi.apps.googleusercontent.com';
-var TOKEN = "ya29.a0AfH6SMCVMXHBqJgqkwoM927NJZijFHjHsiCFnon_XIZ4Bqu07QFLjWo3u21_NJApNytjXp1V1in7IZRbc1_PHqLQXneuXBa3NsNPnKsoVjBEQjqIVW8tHnf5l6G8vwpqLDKVMQnd6bFSOJie2qR-2RbwnvrV";
-var SCOPES = ["https://www.googleapis.com/auth/drive.appdata",
-"https://www.googleapis.com/auth/drive.file",
-"https://www.googleapis.com/auth/drive.install",
-"https://www.googleapis.com/auth/drive.apps.readonly",
-"https://www.googleapis.com/auth/drive.metadata",
-"https://www.googleapis.com/auth/drive",
-"https://www.googleapis.com/auth/drive.activity",
-"https://www.googleapis.com/auth/drive.activity.readonly",
-"https://www.googleapis.com/auth/drive.readonly",
-"https://www.googleapis.com/auth/drive.metadata.readonly",
-"https://www.googleapis.com/auth/drive.scripts"];
-
+var muted = true;
 var ws = null;
 
-function initApp ()
+initApp();
+
+function initApp () 
 {
     window.current_searchtype = PERSON_TYPE;
     window.current_input = '';
     window.start = false;
     ws = init_websocket();
-    //startGoogleAPI()
-    //loadData();
+    muted = true;
     setEvents();
     
 }
-function capitalizeFirstLetter(string) {
-return string.charAt(0).toUpperCase() + string.slice(1);
+
+function capitalizeFirstLetter(string) 
+{
+    return string.charAt(0).toUpperCase() + string.slice(1);
 }
-function titleCase(str) {
+
+function capitalize(s) {
+    let first_char = /\S/;
+    return s.replace(first_char, function(m) { return m.toUpperCase(); });
+}
+
+function titleCase(str) 
+{
     var splitStr = str.toLowerCase().split(' ');
     for (var i = 0; i < splitStr.length; i++) {
         // You do not need to check if i is larger than splitStr length, as your for does that for you
@@ -61,6 +47,7 @@ function titleCase(str) {
     // Directly return the joined string
     return splitStr.join(' '); 
 }  
+
 function requestData(){
     /*PEOPLE DATA*/
     var msg = {
@@ -81,6 +68,8 @@ function requestData(){
     }
     ws.send(JSON.stringify(msg));
 }
+
+
 function loadData (data_type, data)
 {
     var data = CSVToArray(data, ";");
@@ -129,29 +118,12 @@ function loadData (data_type, data)
     }
 }
 
-function generate_lists(jsons_array, onComplete)
-{
-    p_json = jsons_array[0];
-    g_json = jsons_array[1];
-    b_json = jsons_array[2];
 
-    for(var i = 0; i<p_json.length; i++)
-        person_names_list.push(p_json[i]['Person name'] + ' ' + p_json[i]['Person surname']);
-
-    for(var i = 0; i<g_json.length; i++)
-        groups_list.push(g_json[i]['Group name']);
-
-    for(var i = 0; i<b_json.length; i++)
-        buildings_list.push(b_json[i]['Building name']);
-
-    if(onComplete)
-        onComplete()
-}
-
-function setEvents()
+function setEvents() 
 {
     autocomplete(document.getElementById("myInput"), current_data_source);
 
+    /** PEOPLE SEARCH */
     var personToggle = document.getElementById("person-toggle")
     if(personToggle)
     {
@@ -181,6 +153,8 @@ function setEvents()
 
       });
     }
+
+    /** GROUP SEARCH */
     var groupToggle = document.getElementById("group-toggle");
     if(groupToggle)
     {
@@ -209,39 +183,45 @@ function setEvents()
 
       });
     }
+
+    /** BUILDING SEARCH */
     var buildingToggle = document.getElementById("building-toggle");
     if(buildingToggle)
     {
-      buildingToggle.addEventListener("click", function() {
-        var active_filters = document.getElementsByClassName('active');
+        buildingToggle.addEventListener("click", function() {
+            var active_filters = document.getElementsByClassName('active');
 
-        if(this.classList.contains("active"))
-        {
-            updateListDB()
-            return;
-
-        }
-        else
-        {
-
-            var actives = document.getElementsByClassName("active");
-            for(var i = 0; i< actives.length; i++)
+            if(this.classList.contains("active"))
             {
-                actives[i].classList.remove("active");
-            }
-            this.classList.add("active");
-            BUILDING_TYPE = true
-            PERSON_TYPE = false
-            GROUP_TYPE = false
-        }
-        updateListDB()
+                updateListDB()
+                return;
 
-    });
-  }
+            }
+            else
+            {
+
+                var actives = document.getElementsByClassName("active");
+                for(var i = 0; i< actives.length; i++)
+                {
+                    actives[i].classList.remove("active");
+                }
+                this.classList.add("active");
+                BUILDING_TYPE = true
+                PERSON_TYPE = false
+                GROUP_TYPE = false
+            }
+            updateListDB()
+
+        });
+    }
+
     document.getElementById("send-btn").addEventListener("click", function() {
         var input = document.getElementById("myInput").value;
-        if(!input)
+        if(!input){
+
             alert('You have to write and select something')
+            return;
+        }
         window.current_input = input;
         document.getElementById("myInput").value = "";
         var cnt = document.getElementById("buttons-container");
@@ -250,11 +230,7 @@ function setEvents()
         var response_message = {type:"response_data", data:input}
         ws.send(JSON.stringify(response_message));
         changeWaitingView()
-        /*else
-        {
-            alert('Implement sendInfo() method, and send: ' + input)
-
-        }*/
+       
     });
 
     document.getElementById("mute-btn").addEventListener("click", function() 
@@ -278,45 +254,49 @@ function setEvents()
     });
 
     document.getElementById("play-btn").addEventListener("click", function() {
-        var bkg = document.getElementById("dark-bkg")
-        bkg.style.display = "block"
-        var elem = document.getElementById("legalterms")
-        elem.style.display = "block"
+
+        showTermsAndConditions(true);
+        
+    });
+
+
+    document.getElementById("skip-container").addEventListener("click", function(){
+        dskip_container.style.visibility = "hidden";
+        
+        //Speech microphone visible
+        showSpeechButton(true);
+        
+        //Send action to server
+        var init_message = {type:"tab_action", action:"skip", time:timestamp}
+        ws.send(JSON.stringify(init_message));
     });
 
     document.getElementById("accept-terms").addEventListener("click", function() {
         var age   = document.querySelector("#age").checked;       
         var gapi1 = document.querySelector("#gapi1").checked;
         var gapi2 = document.querySelector("#gapi2").checked;
-        if(age&&gapi1&&gapi2)
+
+        if(age && gapi1 && gapi2)
         {
             window.start = true;
-            var bkg = document.getElementById("dark-bkg")
-            bkg.style.display = "none"
-            var elem = document.getElementById("legalterms")
-            elem.style.display = "none"
-            document.getElementById("play-btn").classList.remove("w3-red-color")
-            document.getElementById("play-btn").classList.add("w3-gray-color")
+
+            showTermsAndConditions(false);
+            showPlayButton(false);
+            
+            //Speech microphone visible
+            muted = true;
+            showSpeechButton(true);
             // send start conversation "event" to the server
             var init_message = {type:"tab_action", action:"initialize", time:timestamp}
             ws.send(JSON.stringify(init_message));
-            document.querySelector("#age").checked = false;       
-            document.querySelector("#gapi1").checked = false;
-            document.querySelector("#gapi2").checked = false;
-            /*else
-            {
-                alert('Implement sendInfo() method, and send: ' + input)
             
-            }*/
         }
     });
 
     document.getElementById("cancel-terms").addEventListener("click", function() {
-        var bkg = document.getElementById("dark-bkg")
-        bkg.style.display = "none"
-        var elem = document.getElementById("legalterms")
-        elem.style.display = "none"
+        showTermsAndConditions(false);
     });
+
     // Just for the moment, to toggle the waiting screen
     document.addEventListener("keypress", function(e){
         if(e.code == "Digit1")
@@ -355,29 +335,33 @@ function setEvents()
         if(s_input.value!="")
             s_modal.style.display = "none";
     }
-
 }
+
 function changeWaitingView()
 {
     var div = document.getElementById("waiting-container");
     var where = document.getElementById("where-form");
+    var speech_btn = document.getElementById("speech-btn");
             
     if(div.style.visibility == "hidden")
     {
         div.style.visibility = "visible";
         where.style.visibility = "hidden";
+        speech_btn.style.visibility = "visible";
     }
     else{
         div.style.visibility = "hidden";
         where.style.visibility = "visible";
     }
 }
+
 function resetView()
 {
   window.start = false;
   document.getElementById("play-btn").classList.remove("w3-gray-color")
   document.getElementById("play-btn").classList.add("w3-red-color")
 }
+
 function updateListDB()
 {
     temp = []
@@ -392,7 +376,9 @@ function updateListDB()
     autocomplete(document.getElementById("myInput"), current_data_source);
 
 }
-function autocomplete(inp, arr) {
+
+function autocomplete(inp, arr) 
+{
     /*the autocomplete function takes two arguments,
     the text field element and an array of possible autocompleted values:*/
     var currentFocus;
@@ -489,6 +475,7 @@ function autocomplete(inp, arr) {
         closeAllLists(e.target);
     });
 }
+
 function CSVToArray( strData, strDelimiter ){
     // Check to see if the delimiter is defined. If not,
     // then default to comma.
@@ -615,4 +602,65 @@ function getHTMLRequest(extraURL, keys, body, callback, callbackError = function
 
   xmlHttp.open("GET", finalURL, true);
   xmlHttp.send((body || null));
+}
+
+window.SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+let recognition = new window.SpeechRecognition();
+recognition.lang = 'en-US';
+
+// recognition.onspeechstart = () => {
+//     animateSpeechButton(true);
+// }
+
+// recognition.onspeechend = () => {
+//     animateSpeechButton(false);
+// }
+let final_transcript = "";
+recognition.onresult = (event) => {
+
+    let interim_transcript = '';
+    if (typeof(event.results) == 'undefined') {
+        return;
+    }
+
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+
+      if (event.results[i].isFinal) {
+
+        final_transcript += event.results[i][0].transcript;
+        interim_transcript = ""
+
+      } else {
+        interim_transcript += event.results[i][0].transcript;
+      }
+    }
+    final_transcript = capitalize(final_transcript);
+    
+    //send message to the main app 
+    let response_message = {type:"response_data", data: final_transcript}
+    ws.send(JSON.stringify(response_message));
+
+    animateSpeechButton(false);
+    final_transcript = "";
+}
+
+function startSpeech(e) 
+{
+    e.preventDefault();
+    e.stopPropagation();
+    if(muted)
+        return;
+    recognition.start();
+    animateSpeechButton(true);
+    let message = {type:"tab_action", action: "start_speech"};
+    ws.send(JSON.stringify(message));
+}
+
+function stopSpeech(e) 
+{
+    e.preventDefault();
+    e.stopPropagation();
+    recognition.stop();
+    let message = {type:"tab_action", action: "stop_speech"};
+    ws.send(JSON.stringify(message));
 }
