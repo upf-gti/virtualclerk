@@ -189,14 +189,16 @@ async def handle_person(data_people, nlp, websocket):
     await websocket.send(request_json)
     response_json = await websocket.recv()
     content = decode(response_json)
-    chunk = extract_longest_chunk(content, nlp)
-    if chunk:
-        extracted = str(chunk)
-        compare_complete = len(chunk) > 1
+    # chunk = extract_longest_chunk(content, nlp)
+    # if chunk:
+    #     extracted = str(chunk)
+    #     compare_complete = len(chunk) > 1
 
-    else:
-        extracted = content
-        compare_complete = False
+    # else:
+    #     extracted = content
+    #     compare_complete = False
+    extracted = content
+    compare_complete = True
 
     extracted = extracted.lower()
 
@@ -295,12 +297,14 @@ async def handle_place(data_places, floors, nlp, websocket):
         audios = []
         
         replaced_content = content
+        print(content)
         for key, value in number_map.items():
             replaced_content = replaced_content.replace(key, value)
 
         replaced_content = replaced_content.replace(" ", "")
-
         match = re.search(r"(\d\d)\.?(\d\d\d)", replaced_content)
+        if not match:
+            match = re.search(r"(\d\d)\/?(\d\d\d)", replaced_content)
         if match:
             code = match.group()
             building_code = match.group(1)
@@ -407,7 +411,7 @@ async def handle_place(data_places, floors, nlp, websocket):
                 if r.status_code == 200 and len(r.json()):
                     audios.append(r.json()[0])
             elif target in ['café', 'cafeteria', 'restaurant', 'bar', 'cantina']:
-                message = (f"The {target} is located in the minus 2 floor."
+                message = ("The {target} is located in the minus 2 floor."
                            " Get the elevator or the stairs and follow the corridor."
                            " It will be at the end on the left.")
                 #getAudioPhrase
@@ -443,7 +447,7 @@ async def handle_place(data_places, floors, nlp, websocket):
                 #getAudioPhrase
                 r = requests.get(api_path+'phrases/phrase', params={'text': message})
                 if r.status_code == 200 and len(r.json()):
-                    audios = r.json()[0]
+                    audios.append(r.json()[0])
                 #request_json = encode(message, 'request')
                 print(message)
                 request = dict()
@@ -453,6 +457,7 @@ async def handle_place(data_places, floors, nlp, websocket):
                 await websocket.send(request_json)
                 response_json = await websocket.recv()
                 content = decode(response_json)
+                audios = []
                 message = None
 
     data = {'text': message, 'audios': audios}
@@ -472,7 +477,7 @@ async def agent(websocket, path):
     person_keywords = ['person', 'researcher', 'employee', 'people', 'member']  # keywords for person path
     group_keywords = ['group', 'organization', 'research group']  # keywords for group path
     place_keywords = ['place', 'location', 'localization', 'room', 'office']  # keywords for place path
-    nothing_keywords = ['nothing', 'anything', 'no']
+    nothing_keywords = ['nothing', 'anything', 'no', "it's all", 'bye']
     floors = {
         1: 'first',
         2: 'second',
@@ -486,8 +491,10 @@ async def agent(websocket, path):
     }
 
     while True:
+        print("Start")
         response_communication = await websocket.recv()
         response = json.loads(response_communication)
+        print(response)
         res = None
         if response['type'] == "start":
 
@@ -500,7 +507,7 @@ async def agent(websocket, path):
                 data = r.json()[0]
             else: 
                 data = None
-            request['content'] = {'text': presentation, 'data': data}
+            request['content'] = {'text': presentation, 'data': [data]}
             #request['content'] = presentation
             #getAudioPhrase
             request_communication = json.dumps(request)
@@ -525,7 +532,7 @@ async def agent(websocket, path):
                 content = response['content']
                 target_token = extract_target(content, nlp)
                 target = str(target_token).lower()
-                print(target)
+
                 if target in person_keywords:
                     #data_people = getPeopleNames()
                     res = await handle_person(data_people, nlp, websocket)
@@ -537,6 +544,26 @@ async def agent(websocket, path):
                 elif target in place_keywords:
                     #data_places = getGroupNames()
                     res = await handle_place(data_places, floors, nlp, websocket)
+     
+                elif target in ["skip"]:
+                    message = 'Are you looking for a place, a researcher or a group?'
+                     #getAudioPhrase
+                    request['type'] = 'request'
+
+                    r = requests.get(api_path+'phrases/phrase', params={'text': message})
+                    if r.json()[0]:
+                        data = r.json()[0]
+                    else: 
+                        data = None
+                    request['content'] = {'text': message, 'data': [data]}
+                    request['type'] = 'request'
+                    request_json = json.dumps(request)
+                    await websocket.send(request_json)
+                    response_json = await websocket.recv()
+                    #content = decode(response_json)
+                    response = json.loads(response_json)
+                    continue
+
                 elif target in nothing_keywords:
                     conversation = False
                     message = 'See you next time, bye.'
@@ -548,7 +575,7 @@ async def agent(websocket, path):
                         data = r.json()[0]
                     else: 
                         data = None
-                    request['content'] = {'text': message, 'data': data}
+                    request['content'] = {'text': message, 'data': [data]}
                    ## request_json = encode(message, 'request')
                     #request_json = encode(request, 'request')
                     request_json = json.dumps(request)
@@ -644,7 +671,6 @@ places_file_id = parameters_dict['places_file_id']
 threshold_similarity = parameters_dict['threshold_similarity']
 
 if __name__ == '__main__':
-
     websocket_port = parameters_dict['websocket_port']
     timeout = parameters_dict['timeout']
     port = websocket_port
