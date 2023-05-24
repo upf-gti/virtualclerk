@@ -11,6 +11,7 @@ var buildings_list = [];
 var current_data_source = person_names_list;
 
 var muted = true;
+var speaking = false;
 var ws = null;
 
 initApp();
@@ -287,8 +288,19 @@ function setEvents()
             muted = true;
             showSpeechButton(true);
             // send start conversation "event" to the server
-            var init_message = {type:"tab_action", action:"initialize", time:timestamp}
-            ws.send(JSON.stringify(init_message));
+            if(!connected_to_session) {
+                var message = {type: "session", data: {action: "tablet_connection", token: "dev"}};
+                ws.send(JSON.stringify(message))
+                setTimeout(initConversation, 1000);
+                return;
+            }
+            
+            initConversation();
+            function initConversation() {
+
+                var init_message = {type:"tab_action", action:"initialize", time:timestamp}
+                ws.send(JSON.stringify(init_message));
+            }
             
         }
     });
@@ -650,9 +662,20 @@ function startSpeech(e)
     e.stopPropagation();
     if(muted)
         return;
-    recognition.start();
-    animateSpeechButton(true);
-    let message = {type:"tab_action", action: "start_speech"};
+
+    let message = {};
+    if(speaking) {
+        recognition.stop();
+        animateSpeechButton(false);
+        speaking = false;
+        message = {type:"tab_action", action: "stop_speech"};
+    } else {
+        recognition.start();
+        animateSpeechButton(true);
+        speaking = true;
+        message = {type:"tab_action", action: "start_speech"};
+
+    }
     ws.send(JSON.stringify(message));
 }
 

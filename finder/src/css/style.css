@@ -8,6 +8,10 @@
   src: url('../../assets/Decima_Mono_W01_Bold.ttf');
 }
 
+:root {
+  --global-color: #E8308A;
+}
+
 *{
   font-family: Decima;
   margin: 0;
@@ -61,7 +65,7 @@ body, html {
     margin: 20px 1.15%;
     height: auto;
     color: white;
-    background-color: #E8308A;    /* Medium blue */
+    background-color: var(--global-color);    /* Medium blue */
     padding-bottom: 10px;
     padding-top: 10px;
     padding-left: 10px;
@@ -333,17 +337,17 @@ input:focus {
 .mute-button.active{
   font-size: 6vw;
   visibility: visible;
-  color: #E8308A;
+  color: var(--global-color);
   animation: mymove1 0.5s
 }
 
 @keyframes mymove1 {
   from {color: grey;}
-  to {color: #E8308A;}
+  to {color: var(--global-color);}
 }
 
 @keyframes mymove2 {
-  from {color: #E8308A;}
+  from {color: var(--global-color);}
   to {color: grey;}
 }
 
@@ -357,7 +361,7 @@ input:focus {
 .fa.fa-microphone.w3-red-color.absolut{
   visibility: hidden;
   margin-left: 40px;
-  color: #E8308A !important;
+  color: var(--global-color) !important;
 
 }
 
@@ -370,7 +374,7 @@ input:focus {
 .anim{
 	animation-name: pulse;
 	animation-duration: 1.5s;
-  color: #E8308A !important;
+  color: var(--global-color) !important;
 	animation-iteration-count: infinite;
 	animation-timing-function: ease-in-out;
 }
@@ -430,7 +434,7 @@ input:focus {
 }
 
 #accept-terms{
-  background-color: #E8308A ;
+  background-color: var(--global-color) ;
   color: white;
   border: none;
   border-radius: 2px;
@@ -470,9 +474,9 @@ footer{
     /* width: 20px; */
     font-family: Arial;
     font-size: 20px;
-    color: #E8308A;
+    color: var(--global-color);
     background-color: white;
-    border: 1px #E8308A;
+    border: 1px var(--global-color);
     margin: 70px;
     position: relative!important;
     top: 0;
@@ -563,8 +567,8 @@ i.micro {
     width: 100%;
     font-size: 23px;
     color: white;
-    background-color: #E8308A;
-    border: 1px #E8308A;
+    background-color: var(--global-color);
+    border: 1px var(--global-color);
     margin: 0;
     position: absolute;
     bottom: 0!important;
@@ -573,5 +577,9 @@ i.micro {
 
   #cancel-questionnaire i{
     font-size: 20px!important;
+  }
+
+  form {
+    padding: 10px;
   }
 }

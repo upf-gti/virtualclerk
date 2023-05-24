@@ -23,14 +23,12 @@ function init_websocket () {
       else{
          
       }
-    // var container = document.getElementById("err-container");
-    // container.innerText ="";
+
   };
 
   connection.onerror = function (error) {
     // an error occurred when sending/receiving data
-    // var container = document.getElementById("err-container");
-    // container.innerText ="Error:\n" + JSON.stringify(error)+ "\n\n";
+
     console.log(error)
   };
 
@@ -56,19 +54,15 @@ function init_websocket () {
             waiting_cnt.style.visibility = "hidden";
             
             showPlayButton(false);
-            // var btn = document.getElementById("play-btn");
-            // btn.style.visibility = "hidden";
             showSpeechButton(false);
-            // var speech_btn = document.getElementById("speech-btn");
-            // speech_btn.style.visibility = "hidden";
+
             var cnt = document.getElementById("buttons-container");
             cnt.style.display ='None'; 
             var footer = document.getElementsByTagName("footer")[0];
             footer.style.visibility = "hidden";
             
             showInput(true); 
-            // var where = document.getElementById("where-form");
-            // where.style.visibility = "visible";
+
           break;
 
         case "request_map":
@@ -85,13 +79,19 @@ function init_websocket () {
           
             case "end_conversation":
               muted = true;
-              showPlayButton(true);
               showQuestionnaire();
-             
+              
               showSpeechButton(false);
               showInput(false);
+              showPlayButton(true);
               break;
   
+            case "abort_conversation":
+              showSpeechButton(false);
+              showInput(false);
+              showPlayButton(true);
+              break;
+
             case "mute_toggled":
                 muted = !muted;
                 changeSpeechButton(!muted);
@@ -149,42 +149,10 @@ function init_websocket () {
             showSpeechButton(false);
             animateSpeechButton(false);
             showInput(false);
-            // var speech_btn = document.getElementById("speech-btn");
-            // if(speech_btn.style.visibility == 'visible')
-            //   speech_btn.style.visibility = "hidden";
-            // if(speech_btn.classList.contains('anim'))
-            //   speech_btn.classList.remove('anim');
-            // if(speech_btn.classList.contains("w3-red-color"))
-            // {
-            //   speech_btn.classList.remove("w3-red-color");
-            //   speech_btn.classList.add("w3-gray-color");
-            // }
-              
-            // var btn = document.getElementById("play-btn");
-            // if(btn.classList.contains("w3-gray-color"))
-            // {
-            //     btn.classList.remove("w3-gray-color");
-            //     btn.classList.add("w3-red-color");
-            // }
-            // btn.style.visibility = "visible";
-            // var waiting_cnt = document.getElementById("waiting-container")
-            // waiting_cnt.style.visibility = "visible";
-            // var where = document.getElementById("where-form");
-            // where.style.visibility = "hidden";
-
+            
             var footer = document.getElementsByTagName("footer")[0];
             footer.style.visibility = "visible";
-            
-            // document.getElementById('session').style.display = "block"
-
-            // var btnM = document.getElementById("mute-btn");
-            // var micro = document.getElementById("speech-btn");
-            // if(btnM.classList.contains("active"))
-            // {
-            //     btnM.classList.remove("active");
-            //     //micro.classList.add("anim");
-            // }            
-            
+           
             setEvents()
           }
           break;

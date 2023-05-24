@@ -1,16 +1,6 @@
-//window.SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-
 import { Player } from "./playerScene.js";
 import { MindRemote } from "./mindRemote.js";
-// var recognition = new window.SpeechRecognition();
 
-// recognition.lang = 'en-US';
-// recognition.interimResults = false;
-// recognition.maxAlternatives = 1;
-var final_transcript = "";
-
-var state = 0; //WAITING	
-var lastState = state;
 var counter = 0;
 
 //App states
@@ -34,9 +24,9 @@ var VirtualClerk = {
 	socket: null,
 	isFirstMsg:true,
 	lastQuestion: "",
-	finder: null,
+	finderPath: "./data/imgs/qr.png",
 	start: false,
-	start_recognition: false,
+	abort: false,
     player: new Player(),
     start: function()
     {
@@ -54,72 +44,7 @@ var VirtualClerk = {
 			this.appLoop();
 		}
 		this.player.ECAcontroller.onStopSpeaking = () => {isSpeaking = false;}
-		//-------------------------------------------------------Recognition Events	
-		// recognition.onstart = function(event){	
-		// 	that.start_recognition = true;	
-		// 	console.log("Recognition Start");	
-		// 	if(that.tabRemote)	
-		// 		that.tabRemote.sendMessage({type: "app_action", action: "recognition_start" })	
-			
-		// }	
-		// recognition.onspeechstart = function(){	
-		// 	// var LS = window.LS;	
-		// 	// if(LS)	
-		// 	// {			
-		// 	// 	state = this.player.ECAcontroller.LISTENING;	
-		// 	// 	this.player.ECAcontroller.processMsg(JSON.stringify({type:'control',control:this.player.ECAcontroller.LISTENING}), true);	
-		// 	// }
-		// 	state = this.player.ECAcontroller.LISTENING;
-		// 	this.player.ECAcontroller.processMsg(JSON.stringify({type:'control',control: state}), true);	
-		// 	var that = this;
-		// 	if(that.tabRemote)
-		// 		that.tabRemote.sendMessage({type: "app_action", action: "speech_start" })
-
-		// }.bind(this)
-
-		// recognition.onspeechend = function(){
-		// 	state = this.player.ECAcontroller.PROCESSING
-		// 	var that = this;
-		// 	if(that.tabRemote)
-		// 		that.tabRemote.sendMessage({type: "app_action", action: "speech_end" })
-			
-		// }.bind(this)
-
-		// recognition.onend = function(event){	
-		// 	if(that.tabRemote)	
-		// 		that.tabRemote.sendMessage({type: "app_action", action: "recognition_end" })	
-		// 	console.log("Recognition stopped from recognition.onend()");	
-		// 	that.start_recognition = false;	
-		// 	this.state = this.nextState;
-		// }
-		// recognition.onresult = function(event) {
-		// 	var interim_transcript = '';
-		// 	if (typeof(event.results) == 'undefined') {
-		// 		return;
-		// 	}
-
-		// 	for (var i = event.resultIndex; i < event.results.length; ++i) {
-
-		// 	  if (event.results[i].isFinal) {
-				
-		// 		state = this.player.ECAcontroller.PROCESSING;
-
-		// 		final_transcript += event.results[i][0].transcript;
-				
-		// 		interim_transcript = ""
-
-		// 	  } else {
-		// 		interim_transcript += event.results[i][0].transcript;
-		// 	  }
-		// 	}
-		// 	final_transcript = capitalize(final_transcript);
-
-		// 	that.userMessage( final_transcript );
-		
-		// 	final_transcript = "";
-		// 	recognition.stop();
-		// }
-
+	
 		//use TALN server
 		var protocol = location.protocol == "https:" ? "wss://" : "ws:";
 		//var protocol = "ws://"
@@ -164,10 +89,10 @@ var VirtualClerk = {
 			if(s_input.value!="")
 				s_modal.style.display = "none";
 		}
-		document.getElementById("img").src = "./data/imgs/eva_qr.png";
+		document.getElementById("img").src = this.finderPath;
 		document.getElementById("img-container").style.display = "block";
-
 	},
+
 	appLoop: function(dt)
 	{
 
@@ -185,29 +110,28 @@ var VirtualClerk = {
 					this.player.ECAcontroller.notSpeakingTime = 0;
 					this.state = WAITING; //sure? doing taht onProcessMessage?
 					mute = false;
-					//this.player.ECAcontroller.processMsg(JSON.stringify({type:'control',control: this.player.ECAcontroller.SPEAKING}), true);	
 					break;
 
 				case LISTENING:
 
-					//if(!this.start_recognition && !mute) recognition.start();
-					if(state != this.player.ECAcontroller.LISTENING)
+					if(this.state != this.player.ECAcontroller.LISTENING)
 					{
-						state = this.player.ECAcontroller.LISTENING;
-						this.player.ECAcontroller.processMsg(JSON.stringify({type:'control',control: state}), true);	
+						let state = this.player.ECAcontroller.LISTENING;
+						this.player.ECAcontroller.processMsg(JSON.stringify({type:'control', control: state}), true);	
 					}
 
 					counter+=1;
 					if(counter>60)	
 					{	
 						counter = 0;
-						this.mindRemote.sendMessage( {type:"end", content:""} );	
+						// this.mindRemote.sendMessage( {type:"end", content:""} );
+						this.mindRemote.requestAnswer( "bye" );
+						this.abort = true;	
 					}
 					setTimeout(this.appLoop.bind(this), 3000);
 					break;
 				case SPEAKING:
 					counter = 0;
-					//if(this.start_recognition) recognition.abort();
 
 					if(this.player.ECAcontroller){	
 
@@ -230,21 +154,21 @@ var VirtualClerk = {
 								this.isFirstMsg = true;	
 								this.start = false;	
 								recognition_enabled = false	
-								state = this.player.ECAcontroller.WAITING;
-								this.player.ECAcontroller.processMsg(JSON.stringify({type:'control',control: state}), true);
+								let state = this.player.ECAcontroller.WAITING;
+								this.player.ECAcontroller.processMsg(JSON.stringify({type:'control', control: state}), true);
 							}
 						}			
 					}
 					window.requestAnimationFrame(this.appLoop.bind(this));
 					break;
-				case WAITING:
-					//if(this.start_recognition) recognition.abort();
 
+				case WAITING:
 					counter+=1;
 					if(counter>60)	
 					{	
 						counter = 0;	
 						this.mindRemote.sendMessage( {type:"end", content:""} );
+						this.abort = true;	
 					}
 					break;
 			}
@@ -268,8 +192,6 @@ var VirtualClerk = {
 		}
 		this.displayModal(false);
 		
-		//recognition.continuous = true;
-
 	},
 	onConnectionError: function(server, error)
 	{
@@ -277,10 +199,8 @@ var VirtualClerk = {
 		console.log(error)
 		this.isFirstMsg = true;
 		this.start = false;
-		//if(that.start_recognition) recognition.stop()
 		this.displayModal(true, "Connection error. Trying to reconnect.");
-		
-		
+			
 		setTimeout(function(){
 			var protocol = location.protocol == "https:" ? "wss://" : "ws:";
 			//var protocol = "ws://"
@@ -318,9 +238,6 @@ var VirtualClerk = {
             window.requestAnimationFrame(this.appLoop.bind(this));
             return;
         }
-        // this.state = SPEAKING;
-        // this.nextState = LISTENING;
-        // this.player.ECAcontroller.speaking = true;
 
         var obj = {type: "behaviours", data : []};
         if(msg.content && msg.content.data)
@@ -369,23 +286,22 @@ var VirtualClerk = {
                 
                 this.tabRemote.sendMessage({type:"request_data", data: "person"});
                 
-                //if(this.start_recognition){ recognition.stop()}
-                //recognition_enabled = false;
                 this.nextState = WAITING;
             }
             
             else if(msg.content.text.includes("bye"))	
             {	
-                // this.isFirstMsg = true;	
-                // this.start = false;	
-                // recognition_enabled = false	
-                // state = this.player.ECAcontroller.WAITING;	
-                document.getElementById("img").src = "./data/imgs/eva_qr.png";
+                document.getElementById("img").src = this.finderPath;
 				document.getElementById("img-container").style.display = "block";
 
                 this.nextState = REST;
-                //if(this.start_recognition) recognition.stop();	
-                this.tabRemote.sendMessage({type: "app_action", action:"end_conversation"});
+
+				let action = "end_conversation";
+				if(this.abort) {
+					action = "abort_conversation";
+					this.abort = false;
+				}
+				this.tabRemote.sendMessage({type: "app_action", action: action});
                 this.isFirstMsg = true;
                 this.start = false;	
                 obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.3, start: 1.5, attackPeak: 1.8, relax: 2.8, end: 4, composition: "MERGE"})	
@@ -398,48 +314,6 @@ var VirtualClerk = {
         
         console.log("message processed: " + msg.content)
 
-        //show on character
-        // if(!window.LS)
-        //     return;
-        // var LS = window.LS;
-
-        // var places = ["cafeteria", "bar", "library", "auditori","auditorium", "restaurant", "secretaria", "library", "550" ,"551", "552", "553","554"];
-        // if(msg.content && msg.content.text)
-        //     for(var i in places)
-        //     {
-        //         var place = places[i];
-    
-        //         if(msg.content.text.toLowerCase().includes(place))
-        //         {
-        //             if(place=="secretaria")
-        //                 place="550";
-        //             else if(place=="auditorium")
-        //                 place="auditori"
-        //             else if(place == "bar" || place == "restaurant")	  //hardcoded
-        //                 place = "cafeteria";
-        //             else if(place == "Tanger")
-        //             {
-        //                 var idx = places.map((n)=>msg.content.text.toLowerCase().includes(n)).indexOf(true);
-        //                 if(idx>-1)
-        //                     place = places[idx];
-        //                 else
-        //                     continue;
-        //             }
-        //             var path = "https://dtic-recepcionist.upf.edu/recepcionista/imgs/mapa-"+ place + ".jpg";
-        //             var LSQ = window.LSQ;
-        //             LS.RM.load(path);
-        //             var map = LSQ.get("map");
-        //             var woman = LSQ.get("background");
-        //             if(map)
-        //             {
-        //                 map.material.textures.color.texture = path;
-        //                 var mapPos = map.transform.position.clone();
-        //                 var mapTarget = LSQ.get("mapTarget").transform.position;
-        //                 LS.Tween.easeProperty( map.transform, "position", mapTarget, 1)
-        //                 setTimeout(function(){LS.Tween.easeProperty(map.transform, "position", mapPos, 1)}	, 8000)
-        //             }
-        //         }
-        //     }
         this.player.ECAcontroller.processMsg(JSON.stringify(obj), true);
         window.requestAnimationFrame(this.appLoop.bind(this));
 
@@ -494,7 +368,6 @@ var VirtualClerk = {
 							else 
 							this.state = LISTENING;
 							
-							//if(this.start_recognition) recognition.abort()
 							// Sennd ACK message to tablet to change styles, views...
 							if(this.tabRemote)
 							{
@@ -516,11 +389,6 @@ var VirtualClerk = {
 				case "info":
 					if(json.data.includes("tablet disconnected")){
 						this.mindRemote.sendMessage( {type:"end", content:""} );
-						// this.isFirstMsg = true;
-						// this.start = false;
-						/*this.nextState = REST;
-						window.requestAnimationFrame(this.appLoop.bind(this));*/
-						//recognition.stop()
 					}
 					break;
 			}
@@ -549,6 +417,10 @@ var VirtualClerk = {
 	
 };
 
-  
-  VirtualClerk.start()
+let play = document.getElementById("play-container");
+play.addEventListener("click", ()=> {
+	VirtualClerk.start()
+	play.classList.add("hidden");
+});
+
   export {VirtualClerk}
