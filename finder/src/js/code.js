@@ -14,6 +14,10 @@ var muted = true;
 var speaking = false;
 var ws = null;
 
+const xhr = new XMLHttpRequest();
+
+let chunks = [];
+
 initApp();
 
 function initApp () 
@@ -23,10 +27,90 @@ function initApp ()
     window.start = false;
     ws = init_websocket();
     muted = true;
+
+    
+    initMedia();
     setEvents();
     
 }
 
+async function initMedia() {
+    if (navigator.mediaDevices.getUserMedia) {
+        
+        console.log('getUserMedia supported.');
+        const constraints = { audio: true };
+
+        await navigator.mediaDevices.getUserMedia(constraints).then(
+            (stream) => {
+
+                chunks = [];
+                const mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = (e) => {
+                    chunks.push(e.data);
+                    console.log("just pushed to chunks:" + e + "esp." + e.data);
+                }
+
+                mediaRecorder.onstop = (e) => {
+                    console.log("data available after MediaRecorder.stop() called.");
+                    
+                    //to listen to your recording
+                    const blob = new Blob(chunks, { 'type' : 'audio/wav' });
+                    
+                    //send blob to server
+                    sendToServer(blob);
+
+                    chunks = [];
+                }
+
+            },
+            (err) =>{
+                console.error(err);
+            }
+        );
+       
+    }
+}
+
+function sendToServer(e) {
+    if (e instanceof Blob)
+    {
+        xhr.open("POST", "http://127.0.0.1:8000/transcribe", true);
+        xhr.setRequestHeader("Content-Type", "audio/wav");
+        xhr.send(e);
+    }
+
+    if (typeof e == 'string')
+    {
+        xhr.open("POST", "http://127.0.0.1:8000/text", true);
+        xhr.setRequestHeader("Content-Type", "text/plain");
+        xhr.send(e);
+    }
+    
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                // Parse the response JSON into a JavaScript object
+                const responseData = JSON.parse(xhr.response);
+
+                // Do something with the parsed response data
+                console.log(responseData.query_transcription);
+                console.log(responseData.lang);
+                console.log(responseData.response_transcription);
+                console.log(responseData.audio_path);
+            
+                var msg = {
+                    type: "response_data",
+                    data: xhr.response
+                }
+                ws.send(msg);
+            } 
+            else {
+                console.error('Error:', xhr.statusText);
+            }
+        }
+    };
+}
 function capitalizeFirstLetter(string) 
 {
     return string.charAt(0).toUpperCase() + string.slice(1);
@@ -665,15 +749,21 @@ function startSpeech(e)
 
     let message = {};
     if(speaking) {
-        recognition.stop();
+        // recognition.stop();
+        mediaRecorder.stop();
+        console.log(mediaRecorder.state);
+
         animateSpeechButton(false);
         speaking = false;
-        message = {type:"tab_action", action: "stop_speech"};
+        // message = {type:"tab_action", action: "stop_speech"};
     } else {
-        recognition.start();
+        // recognition.start();
+        mediaRecorder.start();
+        console.log(mediaRecorder.state);
+
         animateSpeechButton(true);
         speaking = true;
-        message = {type:"tab_action", action: "start_speech"};
+        // message = {type:"tab_action", action: "start_speech"};
 
     }
     ws.send(JSON.stringify(message));
