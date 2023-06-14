@@ -1427,7 +1427,14 @@ Lipsync.prototype.loadBlob = function (blob) {
     };
 
     //Load blob
-    fileReader.readAsArrayBuffer(getBlobURL(blob))
+    let arraybuffer = blob;
+    if(typeof arraybuffer == 'string') {
+       arraybuffer = getBlobURL(blob);
+    } 
+    else {
+        arraybuffer= new Blob([arraybuffer], { type: 'application/octet-stream' });
+    }
+    fileReader.readAsArrayBuffer(arraybuffer)
 }
 
 Lipsync.prototype.loadSample = function (inURL) {

@@ -14,9 +14,7 @@ var muted = true;
 var speaking = false;
 var ws = null;
 
-const xhr = new XMLHttpRequest();
-
-let chunks = [];
+var chunks = [];
 
 initApp();
 
@@ -34,6 +32,7 @@ function initApp ()
     
 }
 
+var mediaRecorder = null;
 async function initMedia() {
     if (navigator.mediaDevices.getUserMedia) {
         
@@ -44,7 +43,7 @@ async function initMedia() {
             (stream) => {
 
                 chunks = [];
-                const mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder = new MediaRecorder(stream);
                 
                 mediaRecorder.ondataavailable = (e) => {
                     chunks.push(e.data);
@@ -56,7 +55,14 @@ async function initMedia() {
                     
                     //to listen to your recording
                     const blob = new Blob(chunks, { 'type' : 'audio/wav' });
-                    
+                    // const url = URL.createObjectURL(blob);
+                    // console.log(url)
+                    // let audio = document.createElement("audio")
+                    // audio.autoplay = true
+                    // document.body.appendChild(audio)
+                    // audio.controls = true;
+                    // audio.src = url;
+                    // audio.play();
                     //send blob to server
                     sendToServer(blob);
 
@@ -72,41 +78,46 @@ async function initMedia() {
     }
 }
 
-function sendToServer(e) {
+function sendToServer(e, call = 'text') {
+    let xhrRequest = new XMLHttpRequest();
+
     if (e instanceof Blob)
     {
-        xhr.open("POST", "http://127.0.0.1:8000/transcribe", true);
-        xhr.setRequestHeader("Content-Type", "audio/wav");
-        xhr.send(e);
+        xhrRequest.open("POST", "https://dtic-recepcionist.upf.edu/nlp/transcribe", true);
+        xhrRequest.setRequestHeader("Content-Type", "audio/wav");
+        xhrRequest.send(e);
     }
 
     if (typeof e == 'string')
     {
-        xhr.open("POST", "http://127.0.0.1:8000/text", true);
-        xhr.setRequestHeader("Content-Type", "text/plain");
-        xhr.send(e);
+        xhrRequest.open("POST", "https://dtic-recepcionist.upf.edu/nlp/"+call, true);
+        xhrRequest.setRequestHeader("Content-Type", "text/plain");
+        xhrRequest.send(e);
     }
     
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
+    xhrRequest.onreadystatechange = function() {
+        if (xhrRequest.readyState === XMLHttpRequest.DONE) {
+            if (xhrRequest.status === 200) {
                 // Parse the response JSON into a JavaScript object
-                const responseData = JSON.parse(xhr.response);
+                const responseData = JSON.parse(xhrRequest.response);
 
                 // Do something with the parsed response data
                 console.log(responseData.query_transcription);
                 console.log(responseData.lang);
                 console.log(responseData.response_transcription);
                 console.log(responseData.audio_path);
-            
+                let content = {
+                    text: responseData.response_transcription,
+                    data: {audio: responseData.audio, audio_name: responseData.audio_path}
+                }
                 var msg = {
                     type: "response_data",
-                    data: xhr.response
+                    data: JSON.stringify(content)
                 }
-                ws.send(msg);
+                ws.send(JSON.stringify(msg));
             } 
             else {
-                console.error('Error:', xhr.statusText);
+                console.error('Error:', xhrRequest.statusText);
             }
         }
     };
@@ -378,12 +389,13 @@ function setEvents()
                 setTimeout(initConversation, 1000);
                 return;
             }
-            
+            sendToServer("es","language")
             initConversation();
             function initConversation() {
 
                 var init_message = {type:"tab_action", action:"initialize", time:timestamp}
                 ws.send(JSON.stringify(init_message));
+                sendToServer('Hi');
             }
             
         }
@@ -656,9 +668,9 @@ function CSVToArray( strData, strDelimiter ){
 //    return( arrData );
   }
 
-let baseURL = "https://dtic-recepcionist.upf.edu/api";
-let xmlHttp = new XMLHttpRequest();
-let finalURL, mapIter;
+var baseURL = "https://dtic-recepcionist.upf.edu/api";
+var xmlHttp = new XMLHttpRequest();
+var finalURL, mapIter;
 
 /*
 * The get request logic, it works using the baseURL and adding extra parameters
@@ -700,9 +712,9 @@ function getHTMLRequest(extraURL, keys, body, callback, callbackError = function
   xmlHttp.send((body || null));
 }
 
-window.SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-let recognition = new window.SpeechRecognition();
-recognition.lang = 'en-US';
+// window.SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+// var recognition = new window.SpeechRecognition();
+// recognition.lang = 'en-US';
 
 // recognition.onspeechstart = () => {
 //     animateSpeechButton(true);
@@ -711,34 +723,35 @@ recognition.lang = 'en-US';
 // recognition.onspeechend = () => {
 //     animateSpeechButton(false);
 // }
-let final_transcript = "";
-recognition.onresult = (event) => {
+var final_transcript = "";
+// recognition.onresult = (event) => {
 
-    let interim_transcript = '';
-    if (typeof(event.results) == 'undefined') {
-        return;
-    }
+//     let interim_transcript = '';
+//     if (typeof(event.results) == 'undefined') {
+//         return;
+//     }
 
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
+//     for (let i = event.resultIndex; i < event.results.length; ++i) {
 
-      if (event.results[i].isFinal) {
+//       if (event.results[i].isFinal) {
 
-        final_transcript += event.results[i][0].transcript;
-        interim_transcript = ""
+//         final_transcript += event.results[i][0].transcript;
+//         interim_transcript = ""
 
-      } else {
-        interim_transcript += event.results[i][0].transcript;
-      }
-    }
-    final_transcript = capitalize(final_transcript);
+//       } else {
+//         interim_transcript += event.results[i][0].transcript;
+//       }
+//     }
+//     final_transcript = capitalize(final_transcript);
     
-    //send message to the main app 
-    let response_message = {type:"response_data", data: final_transcript}
-    ws.send(JSON.stringify(response_message));
+//     //send message to the main app 
+//     // let response_message = {type:"response_data", data: final_transcript}
+//     // ws.send(JSON.stringify(response_message));
+//     sendToServer(final_transcript);
 
-    animateSpeechButton(false);
-    final_transcript = "";
-}
+//     animateSpeechButton(false);
+//     final_transcript = "";
+// }
 
 function startSpeech(e) 
 {
@@ -751,19 +764,19 @@ function startSpeech(e)
     if(speaking) {
         // recognition.stop();
         mediaRecorder.stop();
-        console.log(mediaRecorder.state);
+        // console.log(mediaRecorder.state);
 
         animateSpeechButton(false);
         speaking = false;
-        // message = {type:"tab_action", action: "stop_speech"};
+        message = {type:"tab_action", action: "stop_speech"};
     } else {
         // recognition.start();
         mediaRecorder.start();
-        console.log(mediaRecorder.state);
+        // console.log(mediaRecorder.state);
 
         animateSpeechButton(true);
         speaking = true;
-        // message = {type:"tab_action", action: "start_speech"};
+        message = {type:"tab_action", action: "start_speech"};
 
     }
     ws.send(JSON.stringify(message));

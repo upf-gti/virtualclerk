@@ -430,12 +430,47 @@ FacialController.prototype.newLipsync = function (bml) {
     if (!this.lipsyncModule)
         return;
 
-    if (bml.audio)
+    if (bml.audio) {
+        if(typeof bml.audio == "string" && !bml.audio.includes("Ogg")) {
+            // data.audio = data.audio.replace("data:audio/mp3;base64,");
+            bml.audio = base64ToArrayBuffer(bml.audio, "audio/mp3")
+        }
         this.lipsyncModule.loadBlob(bml.audio);
+    }
+
     else if (bml.url)
         this.lipsyncModule.loadSample(bml.url);
 }
 
+function base64ToArrayBuffer(base64) {
+    var binaryString = atob(base64);
+    var bytes = new Uint8Array(binaryString.length);
+    for (var i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+}
+
+function base64toBlob(base64Data, contentType) {
+    contentType = contentType || '';
+    var sliceSize = 1024;
+    var byteCharacters = atob(base64Data);
+    var bytesLength = byteCharacters.length;
+    var slicesCount = Math.ceil(bytesLength / sliceSize);
+    var byteArrays = new Array(slicesCount);
+
+    for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+        var begin = sliceIndex * sliceSize;
+        var end = Math.min(begin + sliceSize, bytesLength);
+
+        var bytes = new Array(end - begin);
+        for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+            bytes[i] = byteCharacters[offset].charCodeAt(0);
+        }
+        byteArrays[sliceIndex] = new Uint8Array(bytes);
+    }
+    return new Blob(byteArrays, { type: contentType });
+}
 
 // --------------------- FACIAL EXPRESSIONS ---------------------
 // BML

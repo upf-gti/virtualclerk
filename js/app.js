@@ -48,9 +48,9 @@ var VirtualClerk = {
 		//use TALN server
 		var protocol = location.protocol == "https:" ? "wss://" : "ws:";
 		//var protocol = "ws://"
-		this.mindRemote = new MindRemote();
-		this.mindRemote.connect(protocol+url, this.onConnectionStarted.bind(this, "nlp"), this.onConnectionError.bind(this, "nlp"));
-		this.mindRemote.onMessage = this.processMessage.bind(this);
+		// this.mindRemote = new MindRemote();
+		// this.mindRemote.connect(protocol+url, this.onConnectionStarted.bind(this, "nlp"), this.onConnectionError.bind(this, "nlp"));
+		// this.mindRemote.onMessage = this.processMessage.bind(this);
 		// connect to Tablet Server
 		this.tabRemote = new MindRemote();
 		this.tabRemote.connect(protocol+tabUrl, this.onConnectionStarted.bind(this,"tablet"), this.onConnectionError.bind(this,"tablet"));
@@ -103,10 +103,10 @@ var VirtualClerk = {
 				case REST:
 					counter = 0;
 
-					if(!this.mindRemote.sendMessage( {type:"start", content:""} )){	
-						this.onConnectionError("nlp");	
-						return;	
-					}	
+					// if(!this.mindRemote.sendMessage( {type:"start", content:""} )){	
+					// 	this.onConnectionError("nlp");	
+					// 	return;	
+					// }	
 					this.player.ECAcontroller.notSpeakingTime = 0;
 					this.state = WAITING; //sure? doing taht onProcessMessage?
 					mute = false;
@@ -125,7 +125,7 @@ var VirtualClerk = {
 					{	
 						counter = 0;
 						// this.mindRemote.sendMessage( {type:"end", content:""} );
-						this.mindRemote.requestAnswer( "bye" );
+						// this.mindRemote.requestAnswer( "bye" );
 						this.abort = true;	
 					}
 					setTimeout(this.appLoop.bind(this), 3000);
@@ -167,7 +167,7 @@ var VirtualClerk = {
 					if(counter>60)	
 					{	
 						counter = 0;	
-						this.mindRemote.sendMessage( {type:"end", content:""} );
+						// this.mindRemote.sendMessage( {type:"end", content:""} );
 						this.abort = true;	
 					}
 					break;
@@ -204,28 +204,30 @@ var VirtualClerk = {
 		setTimeout(function(){
 			var protocol = location.protocol == "https:" ? "wss://" : "ws:";
 			//var protocol = "ws://"
-			if(server == "nlp")
-				that.mindRemote.connect(protocol+url, that.onConnectionStarted.bind(that, "nlp"), that.onConnectionError.bind(that,"nlp"));
-			else if(server == "tablet")
+			// if(server == "nlp")
+			// 	that.mindRemote.connect(protocol+url, that.onConnectionStarted.bind(that, "nlp"), that.onConnectionError.bind(that,"nlp"));
+			// else if(server == "tablet")
+			// 	that.tabRemote.connect(protocol+tabUrl, that.onConnectionStarted.bind(that, "tablet"), that.onConnectionError.bind(that,"tablet"));
+			if(server == "tablet")
 				that.tabRemote.connect(protocol+tabUrl, that.onConnectionStarted.bind(that, "tablet"), that.onConnectionError.bind(that,"tablet"));
 		},5000);
 	},
 
-	userMessage: function( text_message )
-	{
+	// userMessage: function( text_message )
+	// {
 		
-		var mind = this.mindRemote;
+	// 	var mind = this.mindRemote;
 	
-		text_message = text_message.replace(/\b\w/g, l => l.toUpperCase());
+	// 	text_message = text_message.replace(/\b\w/g, l => l.toUpperCase());
 
-		if(text_message.toLowerCase().includes("bye") || text_message.toLowerCase().includes("shut up")){
-			mind.sendMessage( {type:"end", content:""} );
+	// 	if(text_message.toLowerCase().includes("bye") || text_message.toLowerCase().includes("shut up")){
+	// 		mind.sendMessage( {type:"end", content:""} );
 		
-		}
-		if(!mind.requestAnswer( text_message ))
-			this.onConnectionError("nlp")
+	// 	}
+	// 	if(!mind.requestAnswer( text_message ))
+	// 		this.onConnectionError("nlp")
 
-	},
+	// },
 
 	processMessage: function( msg )
 	{
@@ -264,7 +266,7 @@ var VirtualClerk = {
         
         if(msg.content && msg.content.text)
         {
-            if(msg.content.text.includes("Hi"))
+            if(msg.content.text.includes("Hi") || msg.content.text.includes("Hey"))
                 obj.data.push({type:"faceEmotion", emotion: "HAPPINESS", amount:0.4, start: 0.2, attackPeak: 0.3, relax: 0.4, end: 1.1, composition: "OVERWRITE"})
             
             else if(msg.content.text.includes("Good morning"))
@@ -338,9 +340,13 @@ var VirtualClerk = {
 			switch (json.type) 
 			{
 				case "response_data":
-					
-					if(!this.mindRemote.requestAnswer( json.data ))
-						onConnectionError("nlp")
+					if(typeof json.data == "string") {
+						let data = JSON.parse(json.data);
+						
+						this.processMessage({content: data});
+					}
+					// if(!this.mindRemote.requestAnswer( json.data ))
+					// 	onConnectionError("nlp")
 					recognition_enabled = true;
 					// json.data;
 					break;
@@ -388,7 +394,8 @@ var VirtualClerk = {
 
 				case "info":
 					if(json.data.includes("tablet disconnected")){
-						this.mindRemote.sendMessage( {type:"end", content:""} );
+						// this.mindRemote.sendMessage( {type:"end", content:""} );
+						// SEND MESSAGE TO NLP V2
 					}
 					break;
 			}
@@ -417,10 +424,14 @@ var VirtualClerk = {
 	
 };
 
+
+
 let play = document.getElementById("play-container");
 play.addEventListener("click", ()=> {
 	VirtualClerk.start()
 	play.classList.add("hidden");
 });
+
+
 
   export {VirtualClerk}

@@ -315,11 +315,11 @@ CharacterController.prototype.loadAudio = function (block) {
     let output = false;
     if (block.lg.constructor === Array) {
         for (let i = 0; i < block.lg.length; i++) {
-        if (!block.lg[i].audio) {
-            block.lg[i].audio = new Audio();
-            block.lg[i].audio.src = block.lg[i].url;
-            output = true;
-        }
+            if (!block.lg[i].audio) {
+                block.lg[i].audio = new Audio();
+                block.lg[i].audio.src = block.lg[i].url;
+                output = true;
+            }
         }
     }
     else {
