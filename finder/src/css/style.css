@@ -101,7 +101,8 @@ body, html {
     color: #FFF!important;
     background-color: rgb(93, 93, 93)!important;
     width: 100%;
-   /* font-size: x-large;*/
+    border: none;
+   /* font-size: x-large; */
 }
 .w3-red{
 	color: #FFF!important;
@@ -582,4 +583,18 @@ i.micro {
   form {
     padding: 10px;
   }
+
+  #container-selector{
+    z-index: 100;
+    position: absolute;
+    max-width: 200px;
+    font-size: x-large;
+  }
+
+  #container-selector select, #container-selector button{
+    max-width: 200px;
+    font-size: larger!important;
+    margin-bottom: 5px;
+  }
+
 }

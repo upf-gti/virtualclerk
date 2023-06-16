@@ -44,7 +44,7 @@
   <!-- </div> -->
 <!-- </header> -->
 
-<div class="w3-container" id="where" style="padding-bottom:32px; width:calc(100% - 30px); position:absolute;">
+<div class="w3-container" id="where" style="padding-bottom:32px; width:calc(100% - 4vw); position:absolute;">
     
     <div id='waiting-container' class="text-container">Press the button to talk with Eva</div>
 
@@ -75,8 +75,9 @@
   </div>
   <!--<button id="play-btn" class="w3-button w3-circle w3-big-button"><i id="play-btn" class="fa fa-play-circle w3-red-color" style="font-size:400px;"></i></button>-->
   <div id='buttons-container' class="w3-big-button">
+    
     <i id="play-btn" class="fa fa-play-circle w3-red-color absolut" style="font-size:400px;"></i>
-    <div id = "speech-btn" class="w3-gray-color" style="visibility: hidden">
+    <div id = "speech-btn" class="w3-red-color" style="visibility: hidden">
       <i  class="fa fa-circle absolut" ></i>
       <i  class="fa fa-microphone absolut micro" ></i>
     </div>
@@ -96,6 +97,10 @@
         Skip
       </p>	
     </div>
+    <div id ="container-selector"  style="visibility: hidden;">
+      <select id="lang-selector"></select>
+      <button id="btn-selector" class="w3-button w3-black">Select language</button>
+    </div>
   </div>
   
 </div>
@@ -109,10 +114,12 @@
     <button id="btn-session">Connect</button>
   </div>
 </div>
+
 <div id="questionnaire">
-  <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSc_fWSRn40zUxBiV9kaHPWm7eFJ585Tp1N75BR50yf9X7nfrw/viewform?embedded=true" onload = "onLoad(questionnaire_active)" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">S&#39;està carregant…</iframe>
-  <button id="cancel-questionnaire" onclick="goBack()"><i class="fa fa-chevron-left"></i> Return</button>
+  <iframe id="iframe-questionnaire" src="https://docs.google.com/forms/d/e/1FAIpQLSc_fWSRn40zUxBiV9kaHPWm7eFJ585Tp1N75BR50yf9X7nfrw/viewform?embedded=true" width="100%" height="100%" frameborder="0" marginheight="0" marginwidth="0">S&#39;està carregant…</iframe>
+  <button id="cancel-questionnaire" ><i class="fa fa-chevron-left"></i> Return</button>
 </div>
+
 <div id="legalterms">
   <div id="legaltext">
     <p>Please, read the information on the Virtual Clerk next to the installation, where the different
@@ -132,18 +139,32 @@
   </div>
 </div>
 
-
 <!-- Footer -->   
-<footer class="w3-center w3-light-grey w3-padding-45 w3-large w3-text-center">
+<footer class="w3-center w3-light-grey w3-padding-2 w3-large w3-text-center">
   <p>Beta version</p>
 </footer>
 
 <!-- <script async="false" src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" integrity="sha512-fD9DI5bZwQxOi7MhYWnnNPlvXdp/2Pj3XSTRrFs5FQa4mizyGLnJcN6tuvUS6LbmgN1ut+XGSABKvjN0H6Aoow==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
 <script src="src/js/libs/xlsx.full.min.js"></script>
-<script	src="src/js/vc_client_tab.js"></script>
-<script	async="false" src="src/js/code.js"></script>
+<!-- <script	src="src/js/vc_client_tab.js"></script> -->
+<!-- <script	async="false" src="src/js/code.js"></script> -->
+
 <!-- <script async="false" src="src/js/gui.js"></script> -->
-<script>
+<!-- <script>
+    // if (!MediaRecorder.isTypeSupported("audio/webm")) {
+      document.write(
+        decodeURI('%3Cscript defer src="src/js/libs/node_modules/audio-recorder-polyfill/index.js">%3C/script>')
+      )
+    // }
+
+  
+  </script> -->
+  <script type="module">
+    
+    import {Finder} from "./src/js/code.js"
+    let finder = new Finder();
+  </script>
+<!-- <script>
   'use strict';
 
 var sequentialFileLoader = (() => {
@@ -169,14 +190,14 @@ var sequentialFileLoader = (() => {
   return {
     loadScript
   };
-})();
+})(); -->
 
 
-sequentialFileLoader.loadScript([
+<!-- sequentialFileLoader.loadScript([
 "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/solid.min.js",
   "src/js/code.js",
   "src/js/gui.js"
-]);
+]); -->
 </script>
 </body>
 </html>
