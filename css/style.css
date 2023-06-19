@@ -170,7 +170,8 @@ canvas{
     0% { border: 3px solid #77b2d4;width: 50px; height: 50px;}             /* animate from left: 0px */
     50% { border: 3px solid #d47777f5; width: 52px; height: 52px;} /* animate to left: 100%-50px */
 	100% { border: 3px solid #77b2d4;width: 50px; height: 50px;}
-  }
+}
+
 textarea:focus, input:focus{
     outline: none;
 }
@@ -189,12 +190,15 @@ textarea:focus, input:focus{
   background-color: rgb(0,0,0); /* Fallback color */
   background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
 }
+
 #recconecting{
 	display: none;
 }
+
 #session{
 	display: block;
 }
+
 /* Modal Content */
 .modal-content {
 	background-color: #fefefe;
@@ -242,3 +246,8 @@ i.button {
 .hidden {
 	display: none;
 }
+
+select {
+	
+}
+

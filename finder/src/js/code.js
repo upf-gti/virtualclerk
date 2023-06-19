@@ -25,7 +25,7 @@ class Finder {
 
         this.gui = new GUI();
         this.gui.onMouseUp = this.startSpeech.bind(this);
-
+        // this.gui.onMouseDown = this.startSpeech.bind(this);
         this.lang = 'en';
         this.initApp();
     }
@@ -133,6 +133,8 @@ class Finder {
                         type: "response_data",
                         data: JSON.stringify(content)
                     }
+                    this.gui.showMessage(responseData.query_transcription, 'me');
+                    this.gui.showMessage(content.text);
                     this.mindRemote.ws.send(JSON.stringify(msg));
                 } 
                 else {
@@ -355,7 +357,7 @@ class Finder {
 
 
         document.getElementById("skip-container").addEventListener("click", () =>{
-            skip_container.style.visibility = "hidden";
+            skip_container.style.display = "none";
             
             //Speech microphone visible
             this.gui.showSpeechButton(true);
@@ -367,7 +369,7 @@ class Finder {
 
         document.getElementById("lang-selector").addEventListener("change", (e) => {
             this.lang = e.target.value;
-            
+            this.gui.showStateButton(true);
         });
 
         document.getElementById("btn-selector").addEventListener("click", (e) => {
@@ -375,7 +377,7 @@ class Finder {
         
             //Speech microphone visible
             // this.muted = true;
-            this.gui.showSpeechButton(true);
+            
             // send start conversation "event" to the server
             if(!this.mindRemote.connected_to_session) {
                 var message = {type: "session", data: {action: "tablet_connection", token: "dev"}};
@@ -383,10 +385,15 @@ class Finder {
                 setTimeout(this.initConversation.bind(this), 1000);
                 return;
             }
-            
+            this.gui.showSpeechButton(true);
+            this.gui.showStateButton(true);
             this.initConversation();
         });
         
+        document.getElementById("state-btn").addEventListener("click", () => {
+           this.gui.changeStateButton();
+        });
+
         document.getElementById("accept-terms").addEventListener("click", () => {
             var age   = document.querySelector("#age").checked;       
             var gapi1 = document.querySelector("#gapi1").checked;
@@ -399,7 +406,6 @@ class Finder {
                 this.gui.showTermsAndConditions(false);
                 this.gui.showPlayButton(false);
                 this.gui.selectLanguage();
-                
         
             }
         });
@@ -413,14 +419,30 @@ class Finder {
             if(e.code == "Digit1")
             {
                 var div = document.getElementById("waiting-container");
-                if(div.style.visibility == "hidden")
+                if(div.style.display == "none")
                 {
-                    div.style.visibility = "visible";
+                    div.style.display = "auto";
                 }
                 else
                     div.style.visibility = "hidden";
             }
 
+            if(e.code == "Enter") {
+                let text = document.getElementById('user-text').value;
+                if(this.muted)
+                    return;
+                this.sendToServer(text);
+                document.getElementById('user-text').value = '';
+            }
+        });
+
+        // On send text
+        document.getElementById("reply-btn").addEventListener('click', () => {
+            let text = document.getElementById('user-text').value;
+            if(this.muted)
+                return;
+            this.sendToServer(text);
+            document.getElementById('user-text').value = '';
         });
 
         //Server session Modal
@@ -473,13 +495,18 @@ class Finder {
             
             this.gui.showSpeechButton(false);
             this.gui.showInput(false);
+            this.gui.showHeader(true);
             this.gui.showPlayButton(true);
+            this.gui.showStateButton(false);
+            this.gui.changeStateButton(false);
         }
 
         this.mindRemote.onAbortConversation = () => {
             this.gui.showSpeechButton(false);
             this.gui.showInput(false);
             this.gui.showPlayButton(true);
+            this.gui.showStateButton(false);
+            this.gui.changeStateButton(false);
         }
 
         this.mindRemote.onMute = () => {
@@ -534,7 +561,7 @@ class Finder {
             this.gui.showInput(false);
             
             var footer = document.getElementsByTagName("footer")[0];
-            footer.style.visibility = "visible";
+            footer.style.display = "auto";
         
             this.setEvents();
         }
@@ -546,15 +573,15 @@ class Finder {
         var where = document.getElementById("where-form");
         var speech_btn = document.getElementById("speech-btn");
                 
-        if(div.style.visibility == "hidden")
+        if(div.style.display == "none")
         {
-            div.style.visibility = "visible";
+            div.style.display = "auto";
             where.style.visibility = "hidden";
-            speech_btn.style.visibility = "visible";
+            speech_btn.style.display = "auto";
         }
         else{
             div.style.visibility = "hidden";
-            where.style.visibility = "visible";
+            where.style.display = "auto";
         }
     }
 
@@ -666,6 +693,11 @@ class Finder {
         e.preventDefault();
         e.stopPropagation();
         // recognition.stop();
+        this.mediaRecorder.stop();
+        // console.log(mediaRecorder.state);
+
+        this.gui.animateSpeechButton(false);
+        this.speaking = false;
         let message = {type:"tab_action", action: "stop_speech"};
         this.mindRemote.ws.send(JSON.stringify(message));
     }

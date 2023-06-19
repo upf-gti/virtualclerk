@@ -2,15 +2,20 @@
 class GUI {
     constructor() {
 
+        this.header = document.getElementById("header");
         this.init_container = document.getElementById("waiting-container");         
         this.buttons_container = document.getElementById("buttons-container");
         this.img_container = document.getElementById("img-container");
         this.skip_container = document.getElementById("skip-container");
+        this.chat_container = document.getElementById("chat-container");
+        this.log_container = document.getElementById("log-container");
         this.modal = document.getElementById("dark-bg");
         
         this.play_btn = document.getElementById("play-btn");
         this.speech_btn = document.getElementById("speech-btn");
+        this.reply_btn = document.getElementById("reply-btn");
         this.mute_btn = document.getElementById("mute-btn");
+        this.state_btn = document.getElementById("state-btn");
         
         this.footer = document.getElementsByTagName("footer")[0];
         this.terms = document.getElementById("legalterms");
@@ -21,31 +26,52 @@ class GUI {
 
         this.questionnaire_active = false;
         
+        this.onMouseDown = null;
         this.onMouseUp = null;
 
         this.speech_btn.addEventListener("mouseup", (e) => {
             if(this.onMouseUp)
                 this.onMouseUp(e);
         });
+        // this.speech_btn.addEventListener("touchstart", (e) => {
+        //     if(this.onMouseDown)
+        //         this.onMouseDown(e);
+        // });
     //speech_btn.addEventListener("touchend", stopSpeech);
+    }
+
+    showHeader(visible) 
+    {
+        if(visible == undefined)
+        visible = this.header.style.display == "none";
+    
+        if(visible)
+        {
+            this.header.style.display = "block";    
+        }
+        else
+        {
+            this.header.style.display = "none";
+        // init_container.style.display = "none";
+        }
     }
 
     /** Show play button */
     showPlayButton(visible) 
     {
         if(visible == undefined)
-            visible = this.play_btn.style.visibility == "hidden";
+            visible = this.play_btn.style.display == "none";
         
         if(visible)
         {
-            this.play_btn.style.visibility = "visible";
+            this.play_btn.style.display = "block";
             this.init_container.innerText = "Press the button to talk with Eva";
-            this.init_container.style.visibility = "visible";        
+            this.init_container.style.display = "block";        
         }
         else
         {
-            this.play_btn.style.visibility = "hidden";
-        // init_container.style.visibility = "hidden";
+            this.play_btn.style.display = "none";
+        // init_container.style.display = "none";
         }
     }
 
@@ -53,26 +79,26 @@ class GUI {
     showInput(visible)
     {
         if(visible == undefined)
-            visible = this.input.style.visibility == "hidden";
+            visible = this.input.style.display == "none";
 
         if(visible)
-            this.input.style.visibility = "visible"; 
+            this.input.style.display = "block"; 
         else
-            this.input.style.visibility = "hidden";
+            this.input.style.display = "none";
     }
 
     /** Show/Hide speech button */
     showSpeechButton(visible) 
     {
         if(visible == undefined)
-            visible = this.speech_btn.style.visibility == "hidden";
+            visible = this.speech_btn.style.display == "none";
 
         if(visible)
-            this.speech_btn.style.visibility = "visible";
+            this.speech_btn.style.display = "block";
         else
-            this.speech_btn.style.visibility = "hidden";
+            this.speech_btn.style.display = "none";
         
-        this.containerSelector.style.visibility = "hidden";
+        this.containerSelector.style.display = "none";
     }
 
     /** Play/Stop speech button animation */
@@ -98,12 +124,18 @@ class GUI {
         {
             this.speech_btn.classList.remove("w3-gray-color");
             this.speech_btn.classList.add("w3-red-color");
+            this.reply_btn.classList.remove("w3-gray-color");
+            this.reply_btn.classList.add("w3-red-color");
+            
             this.init_container.innerText = "Press the button to talk";
         }
         else 
         {
             this.speech_btn.classList.remove("w3-red-color");
             this.speech_btn.classList.add("w3-gray-color");
+            this.reply_btn.classList.remove("w3-red-color");
+            this.reply_btn.classList.add("w3-gray-color");
+            
             this.init_container.innerText = "";
         }
     }
@@ -124,16 +156,16 @@ class GUI {
     showTermsAndConditions(visible)
     {
         if(visible == undefined)
-            visible = this.terms.style.visibility == "hidden";
+            visible = this.terms.style.display == "none";
 
         if(visible)
         {
-            this.terms.style.visibility = "visible"; 
-            this.modal.style.visibility = "visible";
+            this.terms.style.display = "block"; 
+            this.modal.style.display = "block";
         }
         else {
-            this.terms.style.visibility = "hidden";
-            this.modal.style.visibility = "hidden";
+            this.terms.style.display = "none";
+            this.modal.style.display = "none";
 
             //Clear checkboxes
             document.querySelector("#age").checked = false;       
@@ -145,21 +177,85 @@ class GUI {
     /** Show the evaluation questionnaire */
     showQuestionnaire()
     {
-        this.mute_btn.style.visibility = "hidden";
+        this.mute_btn.style.display = "none";
         this.questionnaire_active = true;
         this.questionnaire.children[0].src = "https://docs.google.com/forms/d/e/1FAIpQLSc_fWSRn40zUxBiV9kaHPWm7eFJ585Tp1N75BR50yf9X7nfrw/viewform?embedded=true";
     }
-  
+    
+    /** Show chat container */
+    showChat(visible)
+    {
+        if(visible == undefined)
+            visible = this.chat_container.style.display == "none";
+
+        if(visible)
+            this.chat_container.style.display = "block";
+        else
+            this.chat_container.style.display = "none";
+        
+    }
+
+    /** Show user/agent chat message */
+    showMessage(msg, className)
+	{
+		var div = document.createElement("div");
+		div.innerHTML = msg;
+		div.className = "msg " + (className||"");
+		this.log_container.appendChild(div);
+		this.log_container.scrollTop = 100000;
+		return div;
+
+	}
+
+    /** Show/Hide state (chat/micro) button */
+    showStateButton(visible)
+    {
+        if(visible == undefined)
+            visible = this.terms.style.display == "none";
+
+        if(visible)
+        {
+            this.state_btn.style.display = "block"; 
+        }
+        else {
+            this.state_btn.style.display = "none";
+        }
+    }
+
+    /** Change state (chat/micro) button */
+    changeStateButton(chat)
+    {
+        if(chat == undefined)
+            chat = this.state_btn.classList.contains("fa-microphone");
+        
+        if(chat)
+        {
+            this.state_btn.classList.remove("fa-microphone");
+            this.state_btn.classList.add("fa-comments");
+            this.chat_container.style.display = "none";
+            this.showSpeechButton(true);
+            this.showHeader(true);
+        }
+        else 
+        {
+            this.state_btn.classList.remove("fa-comments");
+            this.state_btn.classList.add("fa-microphone");
+            this.chat_container.style.display = "flex";
+            this.showSpeechButton(false);
+            this.showHeader(false);
+        }
+    }
+
     onLoad (t=1000){
         
         if(!this.questionnaire_active){
         setTimeout(function(){
             var q = document.getElementById("questionnaire");
-            q.style.visibility = "hidden";
+            q.style.display = "none";
             this.questionnaire_active = false;
         }, t)
         }else{
-            document.getElementById("questionnaire").style.visibility = "visible";
+            document.getElementById("questionnaire").style.display = "block";
             this.questionnaire_active = true;
         }
     }
@@ -182,7 +278,7 @@ class GUI {
                 this.languageSelector.appendChild(opt);
             }
         }
-        this.containerSelector.style.visibility = "visible";
+        this.containerSelector.style.display = "block";
     }
 }
 
