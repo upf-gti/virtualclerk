@@ -539,7 +539,7 @@ i.micro {
     margin-left: calc(50% - 100px);
     position: absolute;
     z-index: 1000;
-    top: 40%;
+    top: 50%;
   }
 
   .text-container {
@@ -587,14 +587,21 @@ i.micro {
   #container-selector{
     z-index: 100;
     position: absolute;
-    max-width: 200px;
-    font-size: x-large;
+    width: 200px;
+    background: white;
+    z-index: 1000;
+    padding: 0px 10px;
+    /* font-size: x-large; */
+    top: 10px;
+    left: calc(50% - 110px);
   }
 
   #container-selector select, #container-selector button{
     max-width: 200px;
     font-size: larger!important;
     margin-bottom: 5px;
+    border-radius: 5px;
+    padding: 5px;
   }
 
   /*Chat*/

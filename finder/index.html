@@ -14,7 +14,8 @@
 <body>
 <div id="dark-bg"></div>
 
-<div style="background-color: white; display: flex; flex-direction: row;justify-content: right;">
+<div style="background-color: white; display: flex; flex-direction: row;justify-content: space-between;">
+  <i id="lang-btn" class="fa w3-red-color fa-globe" style="display: none; padding: 10px; right: 0px; top: 10px; z-index: 100000; font-size: 30px !important;"></i>
   <i id="state-btn" class="fa fa-comments w3-red-color" style="display:none;font-size: 30px!important;padding: 10px;right: 0;top: 10px;z-index: 100000;"></i>
 </div>
 
@@ -43,6 +44,10 @@
     </div>
   </div>
   <!--<button id="play-btn" class="w3-button w3-circle w3-big-button"><i id="play-btn" class="fa fa-play-circle w3-red-color" style="font-size:400px;"></i></button>-->
+  <div id ="container-selector"  style="display:none;">
+    <select id="lang-selector"></select>
+    <!-- <button id="btn-selector" class="w3-button w3-black">Select language</button> -->
+  </div>
   <div id='buttons-container' class="w3-big-button">
     
     <i id="play-btn" class="fa fa-play-circle w3-red-color absolut" style="font-size:400px;"></i>
@@ -66,10 +71,6 @@
         Skip
       </p>	
     </div>
-    <div id ="container-selector"  style="display:none;">
-      <select id="lang-selector"></select>
-      <button id="btn-selector" class="w3-button w3-black">Select language</button>
-    </div>
   </div>
 </div>
 
@@ -77,8 +78,6 @@
 <div id="chat-container">
   <div id="container" class="console">
     <div id="log-container" class='log'>
-      <div class="msg me">Hi</div>
-      <div class="msg">Hi</div>
     </div>
     <div class='typing'>
       <input id="user-text" type='text' placeHolder="Type here..."/>

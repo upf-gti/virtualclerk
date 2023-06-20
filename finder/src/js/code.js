@@ -369,26 +369,31 @@ class Finder {
 
         document.getElementById("lang-selector").addEventListener("change", (e) => {
             this.lang = e.target.value;
-            this.gui.showStateButton(true);
+            this.gui.selectLanguage();
+            this.sendToServer(this.lang ,"language");
+
+            // this.initConversation();
         });
 
-        document.getElementById("btn-selector").addEventListener("click", (e) => {
-            this.sendToServer(this.lang ,"language");
-        
-            //Speech microphone visible
-            // this.muted = true;
-            
-            // send start conversation "event" to the server
-            if(!this.mindRemote.connected_to_session) {
-                var message = {type: "session", data: {action: "tablet_connection", token: "dev"}};
-                this.mindRemote.ws.send(JSON.stringify(message))
-                setTimeout(this.initConversation.bind(this), 1000);
-                return;
-            }
-            this.gui.showSpeechButton(true);
-            this.gui.showStateButton(true);
-            this.initConversation();
+        document.getElementById("lang-btn").addEventListener("click", (e) => {
+            this-this.gui.selectLanguage();
         });
+
+        // document.getElementById("btn-selector").addEventListener("click", (e) => {
+        //     this.sendToServer(this.lang ,"language");
+        
+        //     //Speech microphone visible
+        //     // this.muted = true;
+            
+        //     // send start conversation "event" to the server
+        //     if(!this.mindRemote.connected_to_session) {
+        //         var message = {type: "session", data: {action: "tablet_connection", token: "dev"}};
+        //         this.mindRemote.ws.send(JSON.stringify(message))
+        //         setTimeout(this.initConversation.bind(this), 1000);
+        //         return;
+        //     }
+        //     this.initConversation();
+        // });
         
         document.getElementById("state-btn").addEventListener("click", () => {
            this.gui.changeStateButton();
@@ -405,8 +410,17 @@ class Finder {
 
                 this.gui.showTermsAndConditions(false);
                 this.gui.showPlayButton(false);
-                this.gui.selectLanguage();
-        
+                            
+                //Speech microphone visible
+                // this.muted = true;
+                
+                // send start conversation "event" to the server
+                if(!this.mindRemote.connected_to_session) {
+                    var message = {type: "session", data: {action: "tablet_connection", token: "dev"}};
+                    this.mindRemote.ws.send(JSON.stringify(message))
+                    setTimeout(this.initConversation.bind(this), 1000);
+                    return;
+                }
             }
         });
 
@@ -491,22 +505,22 @@ class Finder {
 
         this.mindRemote.onEndConversation = () => {
             this.muted = true;
-            this.gui.showQuestionnaire();
             
+            this.gui.changeStateButton(true);
             this.gui.showSpeechButton(false);
             this.gui.showInput(false);
             this.gui.showHeader(true);
             this.gui.showPlayButton(true);
             this.gui.showStateButton(false);
-            this.gui.changeStateButton(false);
+            this.gui.showQuestionnaire();
         }
 
         this.mindRemote.onAbortConversation = () => {
+            this.gui.changeStateButton(true);
             this.gui.showSpeechButton(false);
             this.gui.showInput(false);
             this.gui.showPlayButton(true);
             this.gui.showStateButton(false);
-            this.gui.changeStateButton(false);
         }
 
         this.mindRemote.onMute = () => {
@@ -587,6 +601,8 @@ class Finder {
 
     initConversation() {
 
+        this.gui.showSpeechButton(true);
+        this.gui.showStateButton(true);
         var init_message = {type:"tab_action", action:"initialize"}
         this.mindRemote.ws.send(JSON.stringify(init_message));
         // this.sendToServer('Hi');

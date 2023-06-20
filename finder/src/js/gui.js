@@ -15,6 +15,7 @@ class GUI {
         this.speech_btn = document.getElementById("speech-btn");
         this.reply_btn = document.getElementById("reply-btn");
         this.mute_btn = document.getElementById("mute-btn");
+        this.lang_btn = document.getElementById("lang-btn");
         this.state_btn = document.getElementById("state-btn");
         
         this.footer = document.getElementsByTagName("footer")[0];
@@ -216,9 +217,11 @@ class GUI {
         if(visible)
         {
             this.state_btn.style.display = "block"; 
+            this.lang_btn.style.display = "block"; 
         }
         else {
             this.state_btn.style.display = "none";
+            this.lang_btn.style.display = "none";
         }
     }
 
@@ -278,7 +281,10 @@ class GUI {
                 this.languageSelector.appendChild(opt);
             }
         }
-        this.containerSelector.style.display = "block";
+        if(this.containerSelector.style.display == "block")
+            this.containerSelector.style.display = "none";
+        else
+            this.containerSelector.style.display = "block";
     }
 }
 

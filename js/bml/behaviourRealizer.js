@@ -1421,6 +1421,8 @@ Lipsync.prototype.loadBlob = function (blob) {
 
                 that.sample = Lipsync.AContext.createBufferSource();
                 that.sample.buffer = buffer;
+                that.sample.playbackRate.value = 1.2;
+
                 console.log("Audio loaded");
                 that.playSample();
             }, function (e) { console.log("Failed to load audio"); });
