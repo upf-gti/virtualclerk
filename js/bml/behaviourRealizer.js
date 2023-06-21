@@ -1402,7 +1402,9 @@ Lipsync.prototype.start = function (URL) {
     }
 }
 
-Lipsync.prototype.loadBlob = function (blob) {
+Lipsync.prototype.loadBlob = async function (blob) {
+    const b64toBlob = (base64, type = 'application/octet-stream') => 
+    fetch(`data:${type};base64,${base64}`).then(res => res.blob())
 
     // Audio context
     if (Lipsync.AContext)
@@ -1421,8 +1423,6 @@ Lipsync.prototype.loadBlob = function (blob) {
 
                 that.sample = Lipsync.AContext.createBufferSource();
                 that.sample.buffer = buffer;
-                that.sample.playbackRate.value = 1.2;
-
                 console.log("Audio loaded");
                 that.playSample();
             }, function (e) { console.log("Failed to load audio"); });
@@ -1431,7 +1431,7 @@ Lipsync.prototype.loadBlob = function (blob) {
     //Load blob
     let arraybuffer = blob;
     if(typeof arraybuffer == 'string') {
-       arraybuffer = getBlobURL(blob);
+       arraybuffer = await b64toBlob(arraybuffer).then(b => arraybuffer = b);
     } 
     else {
         arraybuffer= new Blob([arraybuffer], { type: 'application/octet-stream' });
@@ -1648,18 +1648,7 @@ Lipsync.prototype.stopSample = function () {
     }
 }
 
-function getBlobURL(arrayBuffer) {
-    var i, l, d, array;
-    d = arrayBuffer;
-    l = d.length;
-    array = new Uint8Array(l);
-    for (var i = 0; i < l; i++) {
-        array[i] = d.charCodeAt(i);
-    }
-    var b = new Blob([array], { type: 'application/octet-stream' });
-    // let blob = blobUtil.arrayBufferToBlob(arrayBuffer, "audio/wav")
-    return b
-}
+
 
 
 // ------------------------ TEXT TO LIP --------------------------------------------

@@ -516,6 +516,8 @@ class Finder {
         }
 
         this.mindRemote.onAbortConversation = () => {
+            this.muted = true;
+
             this.gui.changeStateButton(true);
             this.gui.showSpeechButton(false);
             this.gui.showInput(false);
@@ -569,10 +571,12 @@ class Finder {
 
         this.mindRemote.onClientDisconnected = () => {
             this.mute = true;
-            this.gui.showPlayButton(true);
+            
+            this.gui.changeStateButton(true);
             this.gui.showSpeechButton(false);
-            this.gui.animateSpeechButton(false);
             this.gui.showInput(false);
+            this.gui.showPlayButton(true);
+            this.gui.showStateButton(false);
             
             var footer = document.getElementsByTagName("footer")[0];
             footer.style.display = "auto";
