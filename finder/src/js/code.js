@@ -581,7 +581,14 @@ class Finder {
             var footer = document.getElementsByTagName("footer")[0];
             footer.style.display = "auto";
         
-            this.setEvents();
+            // this.setEvents();
+            if(!this.mindRemote.connected_to_session) {
+                var message = {type: "session", data: {action: "tablet_connection", token: "dev"}};
+                this.mindRemote.ws.send(JSON.stringify(message))
+                this.gui.setInfoText("Trying to connect to the server...");
+                setTimeout(this.initConversation.bind(this), 1000);
+                return;
+            }
         }
     }
 
@@ -607,6 +614,7 @@ class Finder {
 
         this.gui.showSpeechButton(true);
         this.gui.showStateButton(true);
+        this.gui.setInfoText("Press the button to talk with Eva");
         var init_message = {type:"tab_action", action:"initialize"}
         this.mindRemote.ws.send(JSON.stringify(init_message));
         // this.sendToServer('Hi');

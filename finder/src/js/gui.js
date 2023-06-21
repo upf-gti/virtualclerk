@@ -286,6 +286,10 @@ class GUI {
         else
             this.containerSelector.style.display = "block";
     }
+
+    setInfoText(text = '') {
+        this.init_container.innerText = text;
+    }
 }
 
 export {GUI};
