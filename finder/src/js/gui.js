@@ -10,6 +10,7 @@ class GUI {
         this.chat_container = document.getElementById("chat-container");
         this.log_container = document.getElementById("log-container");
         this.modal = document.getElementById("dark-bg");
+        this.error_container = document.getElementById("error-container");
         
         this.play_btn = document.getElementById("play-btn");
         this.speech_btn = document.getElementById("speech-btn");
@@ -289,6 +290,17 @@ class GUI {
 
     setInfoText(text = '') {
         this.init_container.innerText = text;
+    }
+
+    showError(error) {
+        this.error_container.style.display = "block";
+        this.error_container.querySelector("p").innerText = error + "\bSorry, we are working on it.";
+        this.error_container.querySelector("#error-close").addEventListener("click", () => {
+            this.error_container.style.display = "none";
+        })
+        this.error_container.querySelector("#btn-error").addEventListener("click", () => {
+            this.error_container.style.display = "none";
+        })
     }
 }
 

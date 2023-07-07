@@ -139,6 +139,8 @@ class Finder {
                 } 
                 else {
                     console.error('Error:', xhrRequest.statusText);
+                    this.gui.showError(xhrRequest.statusText);
+
                 }
             }
         };
@@ -577,7 +579,7 @@ class Finder {
             this.gui.showInput(false);
             this.gui.showPlayButton(true);
             this.gui.showStateButton(false);
-            
+            this.sendToServer("en", "language");
             var footer = document.getElementsByTagName("footer")[0];
             footer.style.display = "auto";
         
@@ -590,8 +592,10 @@ class Finder {
                 return;
             }
         }
+        window.onbeforeunload =  () => {
+            this.sendToServer("en", "language");
+        }
     }
-
     changeWaitingView()
     {
         var div = document.getElementById("waiting-container");
