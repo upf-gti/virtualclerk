@@ -1,0 +1,452 @@
+version: "3.1"
+
+nlu:
+  - intent: greet
+    examples: |
+      - hey
+      - hello
+      - hi
+      - hello there
+      - good morning
+      - good evening
+      - moin
+      - hey there
+      - let's go
+      - hey dude
+      - goodmorning
+      - goodevening
+      - good afternoon
+      - yo
+      - what's up eva
+
+  - intent: goodbye
+    examples: |
+      - cu
+      - good by
+      - cee you later
+      - good night
+      - bye
+      - goodbye
+      - have a nice day
+      - see you around
+      - bye bye
+      - see you later
+
+  - intent: thank
+    examples: |
+      - thx
+      - thank u
+      - thank you!
+      - thanks
+      
+  
+
+  - intent: affirm
+    examples: |
+      - yes
+      - y
+      - indeed
+      - of course
+      - that sounds good
+      - correct
+
+  - intent: deny
+    examples: |
+      - no
+      - n
+      - never
+      - I don't think so
+      - don't like that
+      - no way
+      - not really
+
+  - intent: mood_great
+    examples: |
+      - perfect
+      - great
+      - amazing
+      - feeling like a king
+      - wonderful
+      - I am feeling very good
+      - I am great
+      - I am amazing
+      - I am going to save the world
+      - super stoked
+      - extremely good
+      - so so perfect
+      - so good
+      - so perfect
+
+  - intent: mood_unhappy
+    examples: |
+      - my day was horrible
+      - I am sad
+      - I don't feel very well
+      - I am disappointed
+      - super sad
+      - I'm so sad
+      - sad
+      - very sad
+      - unhappy
+      - not good
+      - not very good
+      - extremly sad
+      - so saad
+      - so sad
+      - angry
+      - say something
+
+  - intent: bot_challenge
+    examples: |
+      - are you a bot?
+      - are you a human?
+      - am I talking to a bot?
+      - am I talking to a human?
+
+  - intent: get_number_of_groups
+    examples: |
+      - how many groups are in this department?
+      - I would like to know how many different groups I can find here.
+      - Tell me about the split of this department.
+      - What can you tell me about this department?
+      - Tell me something about this department.
+      - what is the DTIC?
+      - what is the department of information and communications technologies?
+      - What can I find here?  
+      - tell me about the department again
+      - i would like to know more about the department
+      - i want to know about the department
+      - what is this department?
+      - describe this department.
+      - what happens in this department?
+      - what research is done in this department?
+      - which fields are studied in this department?
+      - which topics does this department focus on?
+      - what are the areas of study of this department?
+      - what are the fields of the DTIC?
+      - what's in this department?
+      - back to the department
+      - return to department
+      - what is the work of the DTIC?
+      - give me information about the department.
+
+  - intent: get_all_groups
+    examples: |
+      - Which groups can I find here?
+      - Can you tell me about the groups here?
+      - Could you list all the labs of the department?
+      - Can you list the groups here?
+      - Tell me about the groups
+      - tell me again about the groups
+      - list the groups for me
+      - i want information about the groups
+      - show me the groups again
+      - I'd like to know which groups are here.
+      - Please give me all the groups in this department.
+      - What are the topics being worked on in this department?
+      - what are the groups in this department?
+      - What are the research areas of this department?
+      - What groups are in the department of Information and Communications Technologies?
+      - I would like to know the groups of the department.
+      - I need a list of the groups in the department.
+      - Which groups are here?
+      - what groups are here?
+      - return to the groups
+      - let's go back to the groups
+
+  - intent: confirm_exists
+    examples: |
+      - is [JORGE](teacher_name) a teacher in this department?
+      - does [ANDERS](teacher_name) teach here?
+      - what is the biography of [vladimir estivill castro](current_staff_name)?
+      - does [JORDI](teacher_name) have an office here?
+      - is [JEROME](teacher_name) teaching here?
+      - i'm looking for [jorge](teacher_name).
+      - where is [leo](teacher_name)?
+      - where is [leo](teacher_name)'s office?
+      - do you know where I can find [leo](teacher_name)?
+      - how do I get to [leo](teacher_name)'s office?
+      - how can I meet with [leo](teacher_name).
+      - I have a meeting with [leo](teacher_name).
+      - I'm meeting with dr. [leo](teacher_name).
+      - I need to find professor [leo](teacher_name).
+      - on what floor can i find prof. [leo](teacher_name).
+      - what's the office number of teacher [leo](teacher_name).
+      - is [MARIUS](teacher_name) a part of the staff?
+      - tell me more about [MARIA](teacher_name).
+      - tell me about [vladimir estivill castro](current_staff_name).
+      - tell me more about [vladimir estivill castro](current_staff_name).
+      - Where can I find [GERGELY](teacher_name)?
+      - Does [VICENC](teacher_name) belong to the [AI&ML](group_name)?
+      - Does [JORGE](teacher_name) work in the [AI&ML](group_name)?
+      - Is [ANDERS](teacher_name) part of the [AI&ML](group_name)?
+      - is the [AI&ML: Artificial Intelligence and Machine Learning group](group_name) in this department?
+      - is there a [WN: Wireless Networking Group](group_name) here?
+      - can I find the [Computational Neuroscience group](group_name)?
+      - is there a [AI&ML lab](group_name) here?
+      - is there a [Wireless Networking Group](group_name) group in DTIC?
+      - does DTIC have a [natural language processing group](group_name)?
+      - does the DTIC have a [Image Processing lab](group_name)?
+      - Can you tell me about the [ITC](group_name)?
+      - Can you tell me about the [biomedicine](group_name) group?
+      - tell me about the [TALN](group_name) lab.
+      - tell me about the [TALN](group_name) group.
+      - tell me more about the [Interactive Technologies](group_name).
+      - what do you know about the [PHONOS](group_name) group?
+      - Where can I find [JORGE](teacher_name)?
+      - I need to know about the [IP4EC](group_name).
+      - What's the office number of [ALBERT](teacher_name)?
+      - [ALBERT](teacher_name).
+      - [vladimir estivill castro](current_staff_name)
+
+  - intent: find_group_number
+    examples: |
+      - how many people are in [Ai&ML](group_name) lab?
+      - how many people are in [Ai&ML](group_name) group?
+      - how many researchers are in [Ai&ML](group_name) lab?
+      - how many professors are in [Ai&ML](group_name) lab?
+      - what is the strength of [Ai&ML](group_name) lab?
+      - what is the strength of [Ai&ML](group_name) group?
+      - how many researchers are in [Ai&ML](group_name) group?
+      - how many professors are in [Ai&ML](group_name) group?
+      - how many people work in the [Ai&ML](group_name) group?
+      - how many people are in [Ai&ML](group_name)?
+      - which groups?
+      - what groups?
+      - what are the groups of the department?
+      - which labs can I find in this department?
+      - what are the groups of the DTIC?
+
+  - intent: find_group_info
+    examples: |
+      - I'm interested in [Physense](group_name).
+      - What is [Physense](group_name)?
+      - What's the [Physense](group_name) group?
+      - What research is done at [WN](group_name)?
+      - What is the [Wireless Networking](group_name) group's research?
+      - I'm interested in the research work of the [CNS](group_name).
+      - I would like to learn about the [Interactive & Distributed Technologies for Education](group_name) group.
+      - What does the [Web Science and Social Computing](group_name) group do?
+      - What are the research topics of the [GTI](group_name) group?
+      - What are the research topics of the [GTI](group_name)?
+      - Which areas of study does the [Music Technology Group](group_name) work in?
+      - Do you know about the topics studied in the [UBICALAB](group_name)?
+      - What does the [ITC](group_name) work on?
+      - What does the [ITC](group_name) lab work on?
+      - What do researchers in the [IPCV](group_name) work on?
+      - What else can you tell me about the [AI&ML](group_name) lab?
+      - What else can you tell me about the [AI&ML](group_name) group?
+      - What else can you tell me about [AI&ML](group_name)?
+      - I want to know more about [GTI](group_name). 
+      - I want to know more about [GTI](group_name) lab.
+      - I want to know more about [GTI](group_name) group. 
+      - Tell me about the research in the [GTI](group_name).
+      - Tell me about the research at the [GTI](group_name) group.
+      - Tell me about the research in the [GTI](group_name) lab.
+      - How about the [Physense](group_name)
+      - What's the [Physense](group_name) about?
+      - tell me more about [AI&ML](group_name) group.
+      - tell me more about [MTG](group_name).
+
+  - intent: find_group_head
+    examples: |
+      - Who is the director of the [AI&ML](group_name) group?
+      - Who is the director of the [AI&ML](group_name) lab?
+      - who is the director of the [AI&ML](group_name)?
+      - Who heads [MTG](group_name)?
+      - Who heads [MTG](group_name) group?
+      - Who is the head of the [IPCV]?
+      - Who is the head of the [IPCV] lab?
+      - who is the [MTG](group_name) director?
+      - who leads the [MTG](group_name)?
+      - who leads the [MTG](group_name) group?
+      - who leads the [MTG](group_name) lab?
+      - who is the leader of the [WN](group_name)?
+
+  - intent: find_programs_info
+    examples: |
+      - What programs do you offer?
+      - what can I study here?
+      - how many degrees do you have?
+      - I want to know about your programmes
+      - I want to study here
+      - tell me about the programs
+      - tell me about your programs
+      - can you tell me about the degrees
+      - tell me about the degrees
+      - can you tell me about the studies here?
+      - tell me about all the degrees.
+      - let's go back to all the programs.
+      - what are all of the studies offered?
+      - what study programs do you have?
+      - show me the list of programs
+      - show me all programs here
+
+  - intent: list_bsc
+    examples: |
+      - What undergraduate programs are offered here?
+      - Are there any bachelor programs available at the DTIC?
+      - Show me the bachelor of science degrees.
+      - Tell me about the undergraduate majors of the department.
+      - I would like to know about undergrad studies here.
+      - How many bachelor programs do you offer?
+      - Can you tell me about the bachelor degrees?
+      - tell me more about the  bachelor degrees
+
+  - intent: list_msc
+    examples: |
+      - What master programs are offered here?
+      - what graduate degrees do you offer?
+      - Are there any master degrees available at the DTIC?
+      - Show me the master programmes.
+      - What are the graduate degrees of the DTIC?
+      - Tell me about the graduate majors of the department.
+      - I would like to know about grad studies here.
+      - How many masters programs do you offer?
+      - is there a masters of science?
+      - can you tell me about the master degrees?
+      - tell me more about the master's degrees
+
+  - intent: find_degree_info
+    examples: |
+      - I would like to know about the Bachelor's degree in [Biomedical Engineering](bsc_name).
+      - Tell me more about the bsc. in [audiovisual systems engineering](bsc_name).
+      - Tell me more about the [audiovisual systems engineering](bsc_name) bachelor.
+      - Tell me about the bsc in [audiovisual systems engineering](bsc_name).
+      - What is the bachelors in [computer engineering](bsc_name) about?
+      - What are the course of the undergrad in [Biomedical Engineering](bsc_name)?
+      - tell me about the syllabus of the undergraduate degree in [Biomedical Engineering](bsc_name).
+      - i want to know about the BS. in [Mathematical Engineering in Data Science](bsc_name).
+      - im interested in the bachelor's degree in [Biomedical Engineering](bsc_name).
+      - what about the bachelor's studies in [Audiovisual Systems Engineering](bsc_name).
+      - i'd like to learn about the bachelor's degree in [Audiovisual Systems Engineering](bsc_name).
+      - do you have any information about the bsc. in [Audiovisual Systems Engineering](bsc_name).
+      - share the details of the bachelor program [Audiovisual Systems Engineering](bsc_name).
+      - I would like to know about the Master in [Sound and Music Computing](msc_name).
+      - Tell me more about the msc. in [Cognitive Systems and Interactive Media](msc_name).
+      - Tell me more about the [Cognitive Systems and Interactive Media](msc_name) master.
+      - Tell me about the degree in [Cognitive Systems and Interactive Media](msc_name).
+      - Tell me about the degree in [Audiovisual Systems Engineering](bsc_name).
+      - What is the masters in [Cognitive Systems and Interactive Media](msc_name) about?
+      - What are the course of the graduate course in [Cognitive Systems and Interactive Media](msc_name)?
+      - tell me about the syllabus of the graduate studies in [Cognitive Systems and Interactive Media](msc_name).
+      - i want to know about the MS. in [Cognitive Systems and Interactive Media](msc_name).
+      - im interested in the master's degree in [Cognitive Systems and Interactive Media](msc_name).
+      - what about the master studies in [Cognitive Systems and Interactive Media](msc_name).
+      - i'd like to learn about the research master in [Cognitive Systems and Interactive Media](msc_name).
+      - do you have any information about the msc. in [Cognitive Systems and Interactive Media](msc_name).
+      - share the details of the master program [Cognitive Systems and Interactive Media](msc_name).
+      - what is the master in [Cognitive Systems and Interactive Media](msc_name)?
+      - what is the bachelor in [Audiovisual Systems Engineering](bsc_name)?
+
+  - intent: find_credit_info
+    examples: |
+      - How many credits is the bachelor's degree in [audiovisual systems engineering](bsc_name)?
+      - how many credits do I need for the bachelors in [Telecommunications Network Engineering](bsc_name)?
+      - how about the credits of the bachelor in [Audiovisual Systems Engineering](bsc_name)?
+      - How about the credits of the bsc. in [computer science](bsc_name)?
+      - Tell me about the credits of the BS in [Biomedical Engineering](msc_name).
+      - how many ects is the msc. in [Sound and Music Computing](msc_name)?
+      - how many ects is the masters in [Cognitive Systems and Interactive Media](msc_name)?
+      - how many ects is the graduate degree in  in [Intelligent Interactive Systems](bsc_name)?
+      
+  - intent: find_duration_info
+    examples: |
+      - What is the duration of the msc in [intelligent interactive systems](msc_name)?
+      - How many years is the master in [brain and cognition](msc_name)?
+      - How long is the masters in [cognitive systems and interactive media](msc_name)?
+      - Is the master in [Sound and Music Computing](msc_name) a short program ?
+      - How many years do I need to complete the graduate degree in [computational biomedical engineering](msc_name)?
+      - What is the duration of the undergraduate degree in [Telecommunications Network Engineering](bsc_name)?
+      - How many years is the bachelor's degree in [Biomedical Engineering](bsc_name)?
+      - How long is the bachelor [Audiovisual Systems Engineering](bsc_name)?
+      - Is BS in [Mathematical Engineering in Data Science](bsc_name) a short program ?
+      - How many years do I need to complete the bsc. in [Computer Engineering](bsc_name)?
+      
+
+  - intent: get_curr_weather
+    examples: |
+      - What's the current weather in Barcelona?
+      - How warm is it currently outside?
+      - Do I need an umbrella to go outside?
+      - How's the weather?
+      - What's it like out there?
+      - What’s the temperature like?
+
+  - intent: get_cafeteria_information
+    examples: |
+      - Where can I get a coffee around here?
+      - I'm so thirsty.
+      - Tell me where I can get a beer around here?
+      - Something to eat would be amazing.
+      - What are the opening times of the cafeteria?
+      - where's the cafeteria?
+
+  - intent: get_library_information
+    examples: |
+      - is there a library nearby?
+      - where is the library?
+      - where can I find the library?
+      - does the department have a library?
+      - tell me about the library
+      - what time does the library open?
+      - how can i get to the UPF library?
+      - what building is the library in?
+
+  - intent: get_map
+    examples: |
+      - i'm lost
+      - is there a map of this university?
+      - do you have a map of the campus?
+      - where is building 52?
+      - where is building 50?
+      - where is building 51?
+      - where is building 53?
+      - where is building 54?
+      - where is building 55?
+      - how do I get there?
+      - which way should I go?
+      - show me a map please
+      - i need a map
+
+  - intent: get_current_location
+    examples: |
+      - where am i?
+      - what building is this?
+      - which building am i in?
+      - what is the number of this building?
+      - what is the name of the DTIC building?
+
+  - intent: get_dept_director
+    examples: |
+      - who is the director of the DTIC?
+      - who is the director of this department?
+      - who leads this department?
+      - who runs the department of information and communications technologies?
+      - who is the director here?
+
+  - intent: general_info
+    examples: |
+      - what can I ask you about?
+      - what do you know?
+      - what should i ask you?
+      - what information can you share?
+      - what are you able to tell me
+      - tell me what you know
+      - remind me what i can ask you
+      - what info can you show me
+      - how much do you know
+
+  - intent: reception_info
+    examples: |
+      - where is the reception of this campus?
+      - where can i find the help desk
+      - where is the student desk
+      - where can i find the student affairs
+      - where is the main entrance of the campus
+      - where is the secretariat of the campus
+      - where can i find the reception?
+      - how do i get to the reception?
+      
+      
+      
