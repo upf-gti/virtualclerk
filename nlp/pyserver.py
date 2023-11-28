@@ -90,7 +90,7 @@ async def transcribe(request: Request):
         'metadata': {},
     }
 
-    response = requests.post('http://localhost:5005/webhooks/rest/webhook', headers=headers, json=json_data)
+    response = requests.post('http://localhost:5055/webhooks/rest/webhook', headers=headers, json=json_data)
     print("response", response)
 
     #TTS
@@ -179,4 +179,3 @@ async def text(request: Request):
     response_json = jsonable_encoder(response_data)
 
     return response_json
-

@@ -64,7 +64,8 @@ class ActionCheckExistence(Action):
 
         if len(names) >= 1:
             entries = self.all_teachers[self.all_teachers['Full name'].str.contains(names[0].title())]
- 
+            print("ENTRIES", entries)
+            print(names[0].title())
             if len(names) == 1 and names[0].title() == "Can":
                 dispatcher.utter_message(
                     text="Can you repeat that please?")
